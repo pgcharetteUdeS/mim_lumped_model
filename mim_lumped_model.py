@@ -1,19 +1,35 @@
 """mim_lumped_model.py
 
-    Script qui génère la figure 4d de l'article "Ultra‐Narrowband Metamaterial
-    Absorbers for High Spectral Resolution Infrared Spectroscopy" [Kang, 2019].
+    Script qui utilise le modèle groupé de l'article "Ultra‐Narrowband Metamaterial
+    Absorbers for High Spectral Resolution Infrared Spectroscopy" [Kang, 2019] pour
+    faire le calcul de la réponse d'une structure MIM.
 
     Auteur: Paul Charette
 
     NB: les paramètres optiques pour l'or (n & k) et le SiO2 (εr) sont calculés
         en fonction de la longueur d'onde par des modèles polynomiaux générés
         à partir de données sur "refractiveindex.info". Les résultats générés
-        par le script diffèrent des résulats de la figure 4d de l'article,
+        par le script diffèrent des résulats de la figure 2d de l'article,
         il est probable que ces différences soient dues aux valeurs spécifiques des
         propriétés optiques pour l'or et le SiO2 utilisées.
 
+    Remarques dans la publie:
+    1) "When designing an optimized MIM IR absorber with a high spectral selectivity,
+        both FWHM and absorption must be considered simultaneously. Since fpeak
+        can be independently tuned by b, there exists a set of Λ and a at a given fpeak
+        that guarantees a narrow FWHM and a near-unity absorption."
+    2) "The upper limit of Λ is set by the wavelength of operation
+        (i.e., Λ < Λmax =λpeak/(1 + sinθ), where 0 < θ < 90° is the angle of incidence),
+        for Λ exceeding the limit will result in diffraction and the lumped equivalent
+        circuit model is no longer valid. Note that this limit is more stringent
+        (smaller Λmax) at oblique incidence (θ > 0), making the device more susceptible
+        to diffraction. Therefore, to ensure strong absorption over a wide acceptance
+        angle, we choose θ = 30° for the upper limit of Λ (e.g., Λmax ≈ 4 μm
+        for λpeak = 6 μm).
+
 """
 
+from itertools import product
 from matplotlib import use as plt_use
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,8 +53,8 @@ def c_p(geom: Geometry) -> float:
         (np.pi * constants.epsilon_0)
         * geom.a
         / np.log(
-            2 * (geom.Λ - geom.b) / geom.t_au
-            + np.sqrt((2 * (geom.Λ - geom.b) / geom.t_au) ** 2 - 1)
+            2 * (geom.Λ - geom.b) / geom.t_metal
+            + np.sqrt((2 * (geom.Λ - geom.b) / geom.t_metal) ** 2 - 1)
         )
     )
 
@@ -92,8 +108,8 @@ def l_kc(ω: float, mats: Materials, geom: Geometry) -> float:
 
     """
 
-    return (geom.c_prime * geom.b / (geom.a * mats.δ_au(ω=ω))) * (
-        1 / (constants.epsilon_0 * mats.ω_p_au**2)
+    return (geom.c_prime * geom.b / (geom.a * mats.δ(ω=ω))) * (
+        1 / (constants.epsilon_0 * mats.ω_p**2)
     )
 
 
@@ -110,7 +126,7 @@ def r_c(ω: float, mats: Materials, geom: Geometry) -> float:
 
     """
 
-    return (geom.c_prime * geom.b / (geom.a * mats.δ_au(ω=ω))) * (1 / mats.σ_au)
+    return (geom.c_prime * geom.b / (geom.a * mats.δ(ω=ω))) * (1 / mats.σ)
 
 
 def l_kg(ω: float, mats: Materials) -> float:
@@ -125,7 +141,7 @@ def l_kg(ω: float, mats: Materials) -> float:
 
     """
 
-    return (2 / mats.δ_au(ω=ω)) * (1 / (constants.epsilon_0 * mats.ω_p_au**2))
+    return (2 / mats.δ(ω=ω)) * (1 / (constants.epsilon_0 * mats.ω_p**2))
 
 
 def r_g(ω: float, mats: Materials) -> float:
@@ -140,7 +156,7 @@ def r_g(ω: float, mats: Materials) -> float:
 
     """
 
-    return (2 / mats.δ_au(ω=ω)) * (1 / mats.σ_au)
+    return (2 / mats.δ(ω=ω)) * (1 / mats.σ)
 
 
 def z_cross(ω: float, mats: Materials, geom: Geometry) -> complex:
@@ -180,14 +196,14 @@ def z_cross(ω: float, mats: Materials, geom: Geometry) -> complex:
 
 def absorbance(λ: float, mats: Materials, geom: Geometry) -> float:
     """
-    Absorbance
+    Absorbance as a function of wavelength
 
     Args:
         λ (float): wavelength (m)
         mats (Materials): material properties
         geom (Geometry): structure geometry
 
-    Returns: A
+    Returns: Absorbance
 
     """
 
@@ -199,8 +215,166 @@ def absorbance(λ: float, mats: Materials, geom: Geometry) -> float:
     return 1 - r_in
 
 
+def absorbance_spectrum(
+    λs: np.ndarray, mats: Materials, geom: Geometry
+) -> tuple[float, float, float, np.ndarray]:
+    """
+    Absorbance and response metrics (λpeak, FWHM, Q) as a function of a wavelength array
+
+    Args:
+        λs (np.ndarray): array of wavelengths (m)
+        mats (Materials): material properties
+        geom (Geometry): structure geometry
+
+    Returns: λ_peak, FWHM, Q, array of absorbance
+
+    """
+
+    # Absorbance as a function of wavelength
+    absorbances: np.ndarray = np.asarray(
+        [absorbance(λ=λ, mats=mats, geom=geom) for λ in λs]
+    )
+
+    # Absorbance peak wavelength
+    λ_peak_index = int(absorbances.argmax())
+    λ_peak = λs[λ_peak_index]
+
+    # FWHM
+    i_left: int = np.absolute(absorbances[:λ_peak_index] - 0.5).argmin()
+    i_right: int = np.absolute(absorbances[λ_peak_index:] - 0.5).argmin()
+    fwhm: float = λs[λ_peak_index + i_right] - λs[i_left]
+
+    # Q
+    q: float = λ_peak / fwhm
+
+    return λ_peak, fwhm, q, absorbances
+
+
+def figure_2d(mats: Materials, geom: Geometry, λs: np.ndarray):
+    """
+    Plot Figure 2d from the paper
+
+    Args:
+        mats (Materials): material properties
+        geom (Geometry): reference structure geometry
+        λs (np.ndarray): arrays of wavelengths for the analysis
+
+    Returns: None
+
+    """
+
+    # Arrays of cross width, length and period MIM structure parameters
+    a_array: np.ndarray = np.asarray([150, 200, 300, 350]) * 1e-9
+    b_array: np.ndarray = np.asarray([1.5, 1.7, 1.9, 2.1]) * 1e-6
+    Λ_array: np.ndarray = np.asarray([3.6, 3.8, 4.0, 4.2]) * 1e-6
+
+    # Loop to plot absorbance as a function of wavelength for the different geometries
+    fig, ax = plt.subplots()
+    for a, b, Λ in zip(a_array, b_array, Λ_array):
+        geom.a = a
+        geom.b = b
+        geom.Λ = Λ
+        λ_peak, fwhm, q, absorbances = absorbance_spectrum(λs=λs, mats=mats, geom=geom)
+        ax.plot(
+            λs * 1e6,
+            absorbances,
+            label=rf"λ$_{{peak}}$={λ_peak*1e6:.2f} μm, FWHM={fwhm*1e9:.0f} nm, "
+            f"Q={q:.1e}\n"
+            f"b={b*1e6:.1f} μm, a={a*1e9:.0f} nm, Λ={Λ*1e6:.1f} μm",
+        )
+    ax.set(
+        title="Figure 2d : Absorbance(λ)",
+        xlabel="Wavelength (μm)",
+        ylabel="Absorbance",
+        ylim=([0, 1]),
+    )
+    plt.legend(loc="upper right")
+    plt.grid()
+    plt.show()
+
+
+def figure_3b(mats: Materials, geom: Geometry, λs: np.ndarray):
+    """
+    Plot Figure 3b from the paper as well as a 2D map of FWHM(Λ, a)
+
+    Args:
+        mats (Materials): material properties
+        geom (Geometry): reference structure geometry
+        λs (np.ndarray): arrays of wavelengths for the analysis
+
+    Returns: None
+
+    """
+
+    def _calc_λ_peak(a: float, b: float, Λ: float) -> float:
+        geom.a = a
+        geom.b = b
+        geom.Λ = Λ
+        λ_peak, *_ = absorbance_spectrum(λs=λs, mats=mats, geom=geom)
+        return λ_peak
+
+    def _calc_fwhm(a: float, b: float, Λ: float) -> float:
+        geom.a = a
+        geom.b = b
+        geom.Λ = Λ
+        _, fwhm, *_ = absorbance_spectrum(λs=λs, mats=mats, geom=geom)
+        return fwhm
+
+    # Arrays of cross widths (a), lengths (b) and periods (Λ) for the MIM structures
+    n: int = 10
+    a_array: np.ndarray = np.linspace(150, 350, n) * 1e-9
+    b_array: np.ndarray = np.linspace(1.5, 2.4, n) * 1e-6
+    Λ_array: np.ndarray = np.linspace(3.6, 4.2, n) * 1e-6
+
+    # Figure 3b
+    a_fixed: float = 200e-9
+    Λ_fixed: float = 4e-6
+    λ_peak_array = np.asarray(
+        [_calc_λ_peak(a=a_fixed, b=b, Λ=Λ_fixed) for b in b_array]
+    )
+    fig, ax = plt.subplots()
+    ax.plot(b_array * 1e6, λ_peak_array * 1e6)
+    ax.set(
+        title=rf"Figure 3b : λ$_{{peak}}$ (b) @ "
+        f"a = {a_fixed*1e9:.0f} nm, Λ = {Λ_fixed*1e6:.1f} μm",
+        xlabel="b (μm)",
+        ylabel="λ$_{peak}$ (μm)",
+        ylim=(3, 8),
+    )
+    ax.grid()
+
+    # 2D map of FWHM(Λ, a)
+    b_fixed: float = 1.8e-6
+    λ_peak_fixed: float = _calc_λ_peak(a=a_fixed, b=b_fixed, Λ=Λ_fixed)
+    fwhm_array = np.asarray(
+        [_calc_fwhm(a=a, b=b_fixed, Λ=Λ) for Λ, a in product(Λ_array, a_array)]
+    ).reshape((len(Λ_array), len(a_array)))
+    fig, ax = plt.subplots()
+    im = ax.imshow(
+        np.flipud(fwhm_array) * 1e6,
+        aspect="auto",
+        interpolation="bilinear",
+        extent=[
+            a_array[0] * 1e9,
+            a_array[-1] * 1e9,
+            Λ_array[0] * 1e6,
+            Λ_array[-1] * 1e6,
+        ],
+    )
+    ax.set(
+        title=f"FWHM(Λ, a) @ b = {b_fixed*1e6:.1f} μm"
+        rf" (λ$_{{peak}}$ = {λ_peak_fixed*1e6:.2f} μm)",
+        xlabel="a (nm)",
+        ylabel="Λ (μm)",
+    )
+    fig.colorbar(im, label="FWHM (μm)")
+
+    return None
+
+
 def main():
     """
+    Main calling function
 
     Returns: None
 
@@ -210,44 +384,21 @@ def main():
     plt_use("TkAgg")
     plt.ion()
 
-    # Define material properties
-    mats: Materials = Materials()
+    # Define metal and oxyde materials properties in a Materials class object
+    mats: Materials = Materials(ω_p=2 * np.pi * 2.183e15, τ=12.4e-15)
 
-    # Wavelength solution domain
+    # Define reference structure geometry in a Geometry class object
+    geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-9, t_metal=100e-9, t_ox=200e-9, c=0.4)
+
+    # Wavelength spectrum analysis domain
     λs: np.ndarray = np.linspace(4e-6, 7e-6, 1000)
 
-    # Define structure geometries
-    t_au: float = 100e-9
-    t_ox: float = 200e-9
-    c: float = 0.4
-    cross_arm_widths_a: np.ndarray = np.asarray([150, 200, 300, 350]) * 1e-9
-    cross_arm_lengths_b: np.ndarray = np.asarray([1.5, 1.7, 1.9, 2.1]) * 1e-6
-    cross_arm_periods_Λ: np.ndarray = np.asarray([3.6, 3.8, 4.0, 4.2]) * 1e-6
+    figure_3b(mats=mats, geom=geom, λs=λs)
 
-    # Loop to plot absorbance as a function of wavelength for the different geometries
-    fig, ax = plt.subplots()
-    for a, b, Λ in zip(cross_arm_widths_a, cross_arm_lengths_b, cross_arm_periods_Λ):
-        geom = Geometry(a=a, b=b, Λ=Λ, t_au=t_au, t_ox=t_ox, c=c)
-        absorbances: np.ndarray = np.asarray(
-            [absorbance(λ=λ, mats=mats, geom=geom) for λ in λs]
-        )
-        λ_peak_um = λs[np.argmax(absorbances)] * 1e6
-        ax.plot(
-            λs * 1e6,
-            absorbances,
-            label=rf"λ$_{{peak}}$={λ_peak_um:.2f} μm"
-            f" (b={b*1e6:.1f} μm, a={a*1e9:.0f} nm, Λ={Λ*1e6:.1f} μm)",
-        )
-    ax.set(
-        title="Absorbance vs wavelength",
-        xlabel="Wavelength (μm)",
-        ylabel="Absorbance",
-        ylim=([0, 1]),
-    )
-    plt.legend()
-    plt.grid()
-    plt.tight_layout()
-    plt.show()
+    # Figure 2d from the paper
+    figure_2d(mats=mats, geom=geom, λs=λs)
+
+    return None
 
 
 # Press the green button in the gutter to run the script.

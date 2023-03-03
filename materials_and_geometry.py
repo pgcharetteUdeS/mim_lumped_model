@@ -12,15 +12,24 @@ from scipy import constants
 class Geometry:
     """
     MIM structure geometry
+
+    self.a (float) : cross arm width (m)
+    self.b (float) : cross arm length (m)
+    self.Λ (float) : cross pattern period (m)
+    self.t_metal (float) : cross metal film thickness (m)
+    self.t_ox (float) : oxyde spacer film thickness (m)
+    self.c (float) : constant chosen to take the fringe effect of the capacitance
+                     and nonuniform electric field distribution into consideration
+
     """
 
     def __init__(
-        self, a: float, b: float, Λ: float, t_au: float, t_ox: float, c: float
+        self, a: float, b: float, Λ: float, t_metal: float, t_ox: float, c: float
     ):
         self.a = a
         self.b = b
         self.Λ = Λ
-        self.t_au = t_au
+        self.t_metal = t_metal
         self.t_ox = t_ox
         self.c = c
         self.c_prime = 1 - c
@@ -28,23 +37,35 @@ class Geometry:
 
 class Materials:
     """
-    Au and SiO2 material properties
+    Metal and oxyde material properties
+
+    self.ω_p (float): metal plasma frequency (rads/s)
+    self.τ (float): metal relaxation time (s)
+    self.σ (float): metal DC conductivity (ohms * m)
+    self.debug (bool): enable/disable plotting of modeling results for model validation
+    self.εr_r_ox, self.εr_i_ox (np.ndarray, np.ndarray): polynomial model coefficients
+                                                   for real/imaginary components
+                                                   of oxyde relative permittivity εr(λ)
+    self.n_metal, self.κ (np.ndarray, np.ndarray): polynomial model coefficients
+                                                   for real/imaginary components
+                                                   of metal optical index n + iκ
+
     """
 
-    def __init__(self):
+    def __init__(self, ω_p: float, τ: float, debug: bool = False):
         # Initialize class instance variables
-        self.ω_p_au = 2 * np.pi * 2.183e15
-        self.τ_au = 12.4e-15
-        self.σ_au: float = constants.epsilon_0 * self.ω_p_au**2 * self.τ_au
-        self.debug: bool = False
+        self.ω_p: float = ω_p
+        self.τ: float = τ
+        self.σ: float = constants.epsilon_0 * self.ω_p**2 * self.τ
+        self.debug: bool = debug
 
-        # Load polynomial models for au and SiO2 optical parameters
-        self.εr_r_ox, self.εr_i_ox = self.fit_sio2_permittivity_model()
-        self.n_au, self.κ_au = self.fit_gold_optical_index_model()
+        # Load polynomial models for metal and oxyde optical parameters
+        self.εr_r_ox, self.εr_i_ox = self.fit_oxyde_permittivity_model()
+        self.n_metal, self.κ = self.fit_metal_optical_index_model()
 
     def ε_ox(self, λ: float) -> complex:
         """
-        SiO2 complex relative permittivity at wavelength λ (polynomial model)
+        oxyde complex relative permittivity at wavelength λ (polynomial model)
 
         Args:
             λ (float): wavelength (m)
@@ -57,28 +78,28 @@ class Materials:
             λ * 1e6, self.εr_i_ox
         )
 
-    def δ_au(self, ω: float) -> float:
+    def δ(self, ω: float) -> float:
         """
 
-        Equation 8: Au skin depth at radial frequency ω (polynomial model)
+        Equation 8: metal skin depth at radial frequency ω (polynomial model)
 
         Args:
             ω (float): radial frequency (Hz)
 
-        Returns: δ (gold skin depth)
+        Returns: δ (metal skin depth)
 
         """
 
         λ: float = constants.c * (2 * np.pi / ω)
-        κ: float = float(poly.polyval(λ * 1e6, self.κ_au))
+        κ: float = float(poly.polyval(λ * 1e6, self.κ))
 
         return λ / (2 * np.pi * κ)
 
-    def fit_gold_optical_index_model(self) -> tuple[np.ndarray, np.ndarray]:
+    def fit_metal_optical_index_model(self) -> tuple[np.ndarray, np.ndarray]:
         """
-        Fit polynomial model to gold data from refractiveindex.info, [Ciesielski, 2018]
+        Fit polynomial model to Au data from refractiveindex.info, [Ciesielski, 2018]
 
-        Returns: polynomial models for gold n & κ
+        Returns: polynomial models for Au n & κ
 
         """
 
@@ -142,7 +163,7 @@ class Materials:
 
         return n_poly, κ_poly
 
-    def fit_sio2_permittivity_model(self) -> tuple[np.ndarray, np.ndarray]:
+    def fit_oxyde_permittivity_model(self) -> tuple[np.ndarray, np.ndarray]:
         """
         Fit polynomial model to SiO2 data from refractiveindex.info, [Kischkat, 2012]
 
