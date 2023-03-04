@@ -2,18 +2,23 @@
 
     Script qui utilise le modèle groupé de l'article "Ultra‐Narrowband Metamaterial
     Absorbers for High Spectral Resolution Infrared Spectroscopy" [Kang, 2019] pour
-    faire le calcul de la réponse d'une structure MIM.
+    faire le calcul de la réponse d'un filtre à base d'une structure de MIM
+    en réseau.
 
     Auteur: Paul Charette
 
-    NB: les paramètres optiques pour l'or (n & k) et le SiO2 (εr) sont calculés
-        en fonction de la longueur d'onde par des modèles polynomiaux générés
-        à partir de données sur "refractiveindex.info". Les résultats générés
-        par le script diffèrent des résulats de la figure 2d de l'article,
-        il est probable que ces différences soient dues aux valeurs spécifiques des
-        propriétés optiques pour l'or et le SiO2 utilisées.
+    NB:
+    1)  Les propriétés des matériaux pour le métal et l'oxyde sont lues à partir
+        de fichiers Excel lors de la création de l'objet de classe Materials dans
+        la fonction main(), voir les exemples "Ciesielski-Au.xlsx" "Kischkat-SiO2.xlsx".
+    2)  Les propriétés optiques des matériaux sont modélisées par des polynômes dont
+        les ordres sont spécifiés par des paramètres lors de la création de l'objet
+        de classe Materials, il faut valider visuellemenyt les modèles avec le paramètre
+        "debug=True".
+    3)  La géométrie de référence des structures MIM est spécifiée lors de la création
+        de l'object de classe Geometry dans la fonction main().
 
-    Remarques dans la publie:
+    Remarques importantes dans la publie:
     1) "When designing an optimized MIM IR absorber with a high spectral selectivity,
         both FWHM and absorption must be considered simultaneously. Since fpeak
         can be independently tuned by b, there exists a set of Λ and a at a given fpeak
@@ -27,6 +32,9 @@
         angle, we choose θ = 30° for the upper limit of Λ (e.g., Λmax ≈ 4 μm
         for λpeak = 6 μm).
 
+    Remarks:
+    1) type casting with .astype(float) is required to silence mypy warnings, but the
+       code runs correctly without this.
 """
 
 from itertools import product
@@ -40,12 +48,12 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "1.2"
+__version__: str = "2.0"
 
 
 def c_p(geom: Geometry) -> float:
     """
-    Equation 1: periodic coupling capacitance
+    Equation 1: MIM array periodic coupling capacitance
 
     Args:
         geom (Geometry): structure geometry
@@ -80,7 +88,7 @@ def l_m(geom: Geometry) -> float:
 
 def c_m(ω: float, mats: Materials, geom: Geometry) -> complex:
     """
-    Equation 3: mutual capacitance
+    Equation 3: mutual capacitance at frequency ω
 
     Args:
         ω (float): radial frequency
@@ -102,7 +110,7 @@ def c_m(ω: float, mats: Materials, geom: Geometry) -> complex:
 
 def l_kc(ω: float, mats: Materials, geom: Geometry) -> float:
     """
-    Equation 4: cross nano-structure kinetic inductance
+    Equation 4: metal cross nano-structure kinetic inductance at frequency ω
 
     Args:
         ω (float): radial frequency
@@ -120,7 +128,7 @@ def l_kc(ω: float, mats: Materials, geom: Geometry) -> float:
 
 def r_c(ω: float, mats: Materials, geom: Geometry) -> float:
     """
-    Equation 5: cross nano-structure resistance
+    Equation 5: metal cross nano-structure resistance at frequency ω
 
     Args:
         ω (float): radial frequency
@@ -136,7 +144,7 @@ def r_c(ω: float, mats: Materials, geom: Geometry) -> float:
 
 def l_kg(ω: float, mats: Materials) -> float:
     """
-    Equation 6: ground plane kinetic inductance
+    Equation 6: metal ground plane kinetic inductance at frequency ω
 
     Args:
         ω (float): radial frequency
@@ -151,7 +159,7 @@ def l_kg(ω: float, mats: Materials) -> float:
 
 def r_g(ω: float, mats: Materials) -> float:
     """
-    Equation 7: ground plane resistance
+    Equation 7: metal ground plane resistance at frequency ω
 
     Args:
         ω (float): radial frequency
@@ -166,7 +174,7 @@ def r_g(ω: float, mats: Materials) -> float:
 
 def z_cross(ω: float, mats: Materials, geom: Geometry) -> complex:
     """
-    Equation S9: complex total impedance
+    Equation S9: complex total impedance Zcross at frequency ω
 
     Args:
         ω (float): radial frequency
@@ -177,6 +185,7 @@ def z_cross(ω: float, mats: Materials, geom: Geometry) -> complex:
 
     """
 
+    # Laplace transform s variable substitution
     s: complex = 1j * ω
 
     # Equation S10
@@ -232,7 +241,6 @@ class FilterResponseMetrics(TypedDict):
 
 
 def filter_response_metrics(
-    λs: np.ndarray,
     mats: Materials,
     geom: Geometry,
     a: float,
@@ -244,7 +252,6 @@ def filter_response_metrics(
     of structure geometry parameters a, b, and Λ
 
     Args:
-        λs (np.ndarray): array of wavelengths (m)
         mats (Materials): material properties
         geom (Geometry): reference structure geometry
         a (float): cross arm width (m)
@@ -262,17 +269,17 @@ def filter_response_metrics(
 
     # Absorbance as a function of wavelength
     absorbance: np.ndarray = np.asarray(
-        [absorbance_spectrum(λ=λ, mats=mats, geom=geom) for λ in λs]
+        [absorbance_spectrum(λ=λ, mats=mats, geom=geom) for λ in mats.λs]
     )
 
     # Find absorbance peak wavelength
     λ_peak_index = int(absorbance.argmax())
-    λ_peak: float = λs[λ_peak_index]
+    λ_peak: float = mats.λs[λ_peak_index]
 
-    # FWHM
+    # Determine FWHM numerically from the absorbance spectrum
     i_left: int = np.absolute(absorbance[:λ_peak_index] - 0.5).argmin()
     i_right: int = np.absolute(absorbance[λ_peak_index:] - 0.5).argmin()
-    fwhm: float = λs[λ_peak_index + i_right] - λs[i_left]
+    fwhm: float = mats.λs[λ_peak_index + i_right] - mats.λs[i_left]
 
     # Q
     q: float = λ_peak / fwhm
@@ -281,12 +288,12 @@ def filter_response_metrics(
     return {"λ_peak": λ_peak, "fwhm": fwhm, "q": q, "absorbance": absorbance}
 
 
-def figure_2d(λs: np.ndarray, mats: Materials, geom: Geometry):
+def figure_2d(mats: Materials, geom: Geometry):
     """
-    Plot Figure 2d from the paper
+    Plot Figure 2d from the paper (absorbance as a function of wavelength for different
+    MIM geometries specified by the parameters a, b, and Λ).
 
     Args:
-        λs (np.ndarray): arrays of wavelengths for the analysis
         mats (Materials): material properties
         geom (Geometry): reference structure geometry
 
@@ -303,7 +310,6 @@ def figure_2d(λs: np.ndarray, mats: Materials, geom: Geometry):
     fig, ax = plt.subplots()
     for a, b, Λ in zip(a_array, b_array, Λ_array):
         λ_peak, fwhm, q, absorbance = filter_response_metrics(
-            λs=λs,
             mats=mats,
             geom=geom,
             a=a,
@@ -311,7 +317,7 @@ def figure_2d(λs: np.ndarray, mats: Materials, geom: Geometry):
             Λ=Λ,
         ).values()
         ax.plot(
-            λs * 1e6,
+            mats.λs * 1e6,
             absorbance,
             label=rf"λ$_{{peak}}$={λ_peak*1e6:.2f} μm, "
             f"FWHM={fwhm*1e9:.0f} nm, "
@@ -331,12 +337,12 @@ def figure_2d(λs: np.ndarray, mats: Materials, geom: Geometry):
     return None
 
 
-def figure_3b(λs: np.ndarray, mats: Materials, geom: Geometry):
+def figure_3b(mats: Materials, geom: Geometry):
     """
-    Plot Figure 3b from the paper, as well as a 2D map of FWHM(Λ, a)
+    Plot Figure 3b from the paper (λpeak as a function of b), as well as
+    a 2D map of FWHM(Λ, a)
 
     Args:
-        λs (np.ndarray): arrays of wavelengths for the analysis
         mats (Materials): material properties
         geom (Geometry): reference structure geometry
 
@@ -350,13 +356,12 @@ def figure_3b(λs: np.ndarray, mats: Materials, geom: Geometry):
     b_array: np.ndarray = np.linspace(1.5, 2.4, n) * 1e-6
     Λ_array: np.ndarray = np.linspace(3.6, 4.2, n) * 1e-6
 
-    # Figure 3b
+    # Figure 3b (λpeak as a function of b)
     a_fixed: float = 200e-9
     Λ_fixed: float = 4e-6
     λ_peak_array = np.asarray(
         [
             filter_response_metrics(
-                λs=λs,
                 mats=mats,
                 geom=geom,
                 a=a_fixed,
@@ -365,7 +370,7 @@ def figure_3b(λs: np.ndarray, mats: Materials, geom: Geometry):
             ).get("λ_peak")
             for b in b_array
         ]
-    )
+    ).astype(float)
     fig, ax = plt.subplots()
     ax.plot(b_array * 1e6, λ_peak_array * 1e6)
     ax.set(
@@ -379,27 +384,30 @@ def figure_3b(λs: np.ndarray, mats: Materials, geom: Geometry):
 
     # 2D map of FWHM(Λ, a)
     b_fixed: float = 1.8e-6
-    λ_peak_fixed: float = filter_response_metrics(
-        λs=λs,
+    filter_metrics: FilterResponseMetrics = filter_response_metrics(
         mats=mats,
         geom=geom,
         a=a_fixed,
         b=b_fixed,
         Λ=Λ_fixed,
-    ).get("λ_peak")
-    fwhm_array = np.asarray(
-        [
-            filter_response_metrics(
-                λs=λs,
-                mats=mats,
-                geom=geom,
-                a=a,
-                b=b_fixed,
-                Λ=Λ,
-            ).get("fwhm")
-            for Λ, a in product(Λ_array, a_array)
-        ]
-    ).reshape((len(Λ_array), len(a_array)))
+    )
+    λ_peak_fixed = filter_metrics.get("λ_peak")
+    fwhm_array = (
+        np.asarray(
+            [
+                filter_response_metrics(
+                    mats=mats,
+                    geom=geom,
+                    a=a,
+                    b=b_fixed,
+                    Λ=Λ,
+                ).get("fwhm")
+                for Λ, a in product(Λ_array, a_array)
+            ]
+        )
+        .reshape((len(Λ_array), len(a_array)))
+        .astype(float)
+    )
     fig, ax = plt.subplots()
     im = ax.imshow(
         np.flipud(fwhm_array) * 1e6,
@@ -435,20 +443,26 @@ def main():
     plt_use("TkAgg")
     plt.ion()
 
-    # Define metal and oxyde materials properties in a Materials class object
-    mats: Materials = Materials(ω_p=2 * np.pi * 2.183e15, τ=12.4e-15)
+    # Define metal and oxyde materials properties in a Materials class object,
+    # where the data is read from two Excel files
+    mats: Materials = Materials(
+        oxyde_datafile="Kischkat-SiO2.xlsx",
+        εr_r_model_order=9,
+        εr_i_model_order=12,
+        metal_datafile="Ciesielski-Au.xlsx",
+        n_model_order=3,
+        κ_model_order=4,
+        debug=False,
+    )
 
-    # Define reference structure geometry in a Geometry class object
+    # Define reference structure geometry
     geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-9, t_metal=100e-9, t_ox=200e-9, c=0.4)
 
-    # Wavelength spectrum analysis domain
-    λs: np.ndarray = np.linspace(4e-6, 7e-6, 1000)
-
     # Figure 2d from the paper
-    figure_2d(λs=λs, mats=mats, geom=geom)
+    figure_2d(mats=mats, geom=geom)
 
     # Figure 3b from the paper
-    figure_3b(λs=λs, mats=mats, geom=geom)
+    figure_3b(mats=mats, geom=geom)
 
     return None
 
