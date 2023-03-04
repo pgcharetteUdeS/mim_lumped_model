@@ -39,6 +39,10 @@ from typing import TypedDict
 from materials_and_geometry import Geometry, Materials
 
 
+# Script version
+__version__: str = "1.2"
+
+
 def c_p(geom: Geometry) -> float:
     """
     Equation 1: periodic coupling capacitance
