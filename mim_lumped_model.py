@@ -2,7 +2,7 @@
 
     Script qui utilise le modèle groupé de l'article "Ultra‐Narrowband Metamaterial
     Absorbers for High Spectral Resolution Infrared Spectroscopy" [Kang, 2019] pour
-    faire le calcul de la réponse d'un filtre à base d'une structure de MIM
+    faire le calcul de la réponse d'un filtre à base de nano-structures MIM
     en réseau.
 
     Auteur: Paul Charette
@@ -10,13 +10,16 @@
     NB:
     1)  Les propriétés des matériaux pour le métal et l'oxyde sont lues à partir
         de fichiers Excel lors de la création de l'objet de classe Materials dans
-        la fonction main(), voir les exemples "Ciesielski-Au.xlsx" "Kischkat-SiO2.xlsx".
+        la fonction main(), voir les exemples "Ciesielski-Au.xlsx" et
+        "Kischkat-SiO2.xlsx" pour le format des fichiers.
     2)  Les propriétés optiques des matériaux sont modélisées par des polynômes dont
-        les ordres sont spécifiés par des paramètres lors de la création de l'objet
-        de classe Materials, il faut valider visuellemenyt les modèles avec le paramètre
-        "debug=True".
+        les ordres sont spécifiés lors de la création de l'objet de classe Materials,
+        il faut valider visuellement les modèles avec le paramètre "debug=True".
     3)  La géométrie de référence des structures MIM est spécifiée lors de la création
-        de l'object de classe Geometry dans la fonction main().
+        de l'objet de classe Geometry dans la fonction main().
+    4)  La plage des longueurs d'onde prises en compte dans les calculs est
+        la portion commune des plages de longueurs d'onde des données optiques
+        pour le metal et l'oxyde lues dans les deux fichiers Excel.
 
     Remarques importantes dans la publie:
     1) "When designing an optimized MIM IR absorber with a high spectral selectivity,
@@ -31,6 +34,9 @@
         to diffraction. Therefore, to ensure strong absorption over a wide acceptance
         angle, we choose θ = 30° for the upper limit of Λ (e.g., Λmax ≈ 4 μm
         for λpeak = 6 μm).
+
+    TODO:
+    1) Angle oblique (hors-normale) d'incidence
 
     Remarks:
     1) type casting with .astype(float) is required to silence mypy warnings, but the
@@ -443,7 +449,7 @@ def main():
     plt_use("TkAgg")
     plt.ion()
 
-    # Define metal and oxyde materials properties in a Materials class object,
+    # Define metal and oxyde material properties in a Materials class object,
     # where the data is read from two Excel files
     mats: Materials = Materials(
         oxyde_datafile="Kischkat-SiO2.xlsx",

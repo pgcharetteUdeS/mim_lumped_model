@@ -63,33 +63,50 @@ class Materials:
             κ_model_order (int): κ polynomial model order (default = 4)
             debug (bool): enable/disable plotting of optical data with modeled
                           results, for model validation
+
+        Other class variables:
+            εr_r_ox (np.ndarray): oxyde εr.real polynomial model coefficients
+            εr_i_ox (np.ndarray): oxyde εr.imag polynomial model coefficients
+            oxyde_name (str): name of oxyde
+            n_metal (np.ndarray): metal n polynomial model coefficients
+            κ_metal (np.ndarray): metal κ polynomial model coefficients
+            metal_name (str): name of metal
+            σ (float): metal DC conductivity (ohm * meter)
+            τ (float): metal relaxation time (s)
+            ω_p (float): metal plasma frequency (Hz)
+            λs (np.ndarray): wavelength domain
+
         """
 
         # Initialize class instance variables
-        self.metal_datafile: str = metal_datafile
         self.oxyde_datafile: str = oxyde_datafile
         self.εr_r_model_order: int = εr_r_model_order
         self.εr_i_model_order: int = εr_i_model_order
+        self.metal_datafile: str = metal_datafile
         self.n_model_order: int = n_model_order
         self.κ_model_order: int = κ_model_order
-
-        # Declare class variable types
         self.debug: bool = debug
-        self.λs: np.ndarray
-        self.metal_name: str
+
+        # Declare other class variable types
+        self.εr_r_ox: np.ndarray
+        self.εr_i_ox: np.ndarray
         self.oxyde_name: str
+        self.n_metal: np.ndarray
+        self.κ_metal: np.ndarray
+        self.metal_name: str
         self.σ: float
         self.τ: float
         self.ω_p: float
+        self.λs: np.ndarray
 
-        # Load material properties and optical index data for teh metal and the oxyde,
+        # Load material properties and optical index data for the metal and the oxyde,
         # fit the polynomial models to the data
         (
             self.εr_r_ox,
             self.εr_i_ox,
             λs_oxyde,
             self.oxyde_name,
-        ) = self.oxyde_material_properties()
+        ) = self.define_oxyde_material_properties()
         (
             self.n_metal,
             self.κ_metal,
@@ -98,7 +115,7 @@ class Materials:
             self.ω_p,
             self.τ,
             self.σ,
-        ) = self.load_metal_material_properties()
+        ) = self.define_metal_material_properties()
 
         # Determine wavelength domain (largest common wavelength range between the
         # metal and oxyde optical data sets loaded from the Excel files)
@@ -138,7 +155,7 @@ class Materials:
 
         return λ / (2 * np.pi * κ)
 
-    def load_metal_material_properties(
+    def define_metal_material_properties(
         self,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, str, float, float, float]:
         """
@@ -146,11 +163,13 @@ class Materials:
         Load metal material properties from Excel file and fit polynomial model
         to optical index data
 
+        NB: the self.debug parameter enables/diables plotting of data & modeling results
+
         Returns: material properties, polynomial models for n & κ
 
         """
 
-        # Load metal properties
+        # Load ωp and τ metal properties
         wb: Workbook = load_workbook(self.metal_datafile)
         properties_ws: worksheet = wb["properties"]
         metal_name: str = properties_ws["B1"].value
@@ -166,7 +185,7 @@ class Materials:
         wb.close()
         λs: np.ndarray = n_and_k_data[:, 0]
 
-        # Fit polynomial models (order determined by trial & error)
+        # Fit polynomial models to n(λ) and κ(λ), order determined by trial & error
         n_poly, n_stats = poly.polyfit(
             x=λs, y=n_and_k_data[:, 1], deg=self.n_model_order, full=True
         )
@@ -182,7 +201,7 @@ class Materials:
                 f"metal n.imag model order ({self.κ_model_order}) is too high!"
             )
 
-        # If required, plot data and model estimates for validation of model oder
+        # If required, plot data and model estimates for validation of model order
         if self.debug:
             fig, [ax0, ax1] = plt.subplots(2)
             fig.suptitle(
@@ -203,13 +222,15 @@ class Materials:
 
         return n_poly, κ_poly, λs, metal_name, ω_p, τ, σ
 
-    def oxyde_material_properties(
+    def define_oxyde_material_properties(
         self,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, str]:
         """
 
         Load oxyde material properties from Excel file and fit polynomial model
         to optical index data
+
+        NB: the self.debug parameter enables/diables plotting of data & modeling results
 
         Returns: polynomial models for oxyde complex permittivity components
 
@@ -228,7 +249,7 @@ class Materials:
         εr_r: np.ndarray = n_and_k_data[:, 1] ** 2 - n_and_k_data[:, 2] ** 2
         εr_i: np.ndarray = 2 * n_and_k_data[:, 1] * n_and_k_data[:, 2]
 
-        # Fit polynomial models (order determined by trial & error)
+        # Fit polynomial models to εr_r(λ) and εr_i(λ), order determined by trial&error
         εr_r_poly, εr_r_stats = poly.polyfit(
             x=λs, y=εr_r, deg=self.εr_r_model_order, full=True
         )
@@ -244,7 +265,7 @@ class Materials:
                 f"oxyde ε_r.imag model order ({self.εr_i_model_order}) is too high!"
             )
 
-        # If required, plot data and model estimates for validation of model oder
+        # If required, plot data and model estimates for validation of model order
         if self.debug:
             εr_r_modeled: np.ndarray = poly.polyval(λs, εr_r_poly)
             εr_i_modeled: np.ndarray = poly.polyval(λs, εr_i_poly)
