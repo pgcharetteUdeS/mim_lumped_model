@@ -76,7 +76,7 @@ class Materials:
             n_metal (np.ndarray): metal n polynomial model coefficients
             κ_metal (np.ndarray): metal κ polynomial model coefficients
             metal_name (str): name of metal
-            σ (float): metal DC conductivity (ohm * meter)
+            σ (float): metal DC conductivity (1/(ohm * meter))
             τ (float): metal relaxation time (s)
             ω_p (float): metal plasma frequency (Hz)
             λs (np.ndarray): wavelength domain (len = absorbance_spectrum_sample_count)
