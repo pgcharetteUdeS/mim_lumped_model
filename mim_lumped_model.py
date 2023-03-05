@@ -2,8 +2,8 @@
 
     Script qui utilise le modèle groupé de l'article "Ultra‐Narrowband Metamaterial
     Absorbers for High Spectral Resolution Infrared Spectroscopy" [Kang, 2019] pour
-    faire le calcul de la réponse d'un filtre à base de nano-structures MIM
-    en réseau.
+    faire le calcul de la réponse d'un filtre à base d'un réseau de
+    nano-structures MIM en forme de croix.
 
     Auteur: Paul Charette
 
@@ -449,7 +449,7 @@ def main():
         metal_datafile="Ciesielski-Au.xlsx",
         n_model_order=3,
         κ_model_order=4,
-        spectrum_spectrum_sample_count=1000,
+        absorbance_spectrum_sample_count=1000,
         debug=False,
     )
 
