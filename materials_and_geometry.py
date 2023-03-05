@@ -1,5 +1,7 @@
 """materials_and_geometry.py
 
+    Declaration of Geometry and Materials classes
+
 """
 __all__ = ["Geometry", "Materials"]
 
@@ -12,7 +14,7 @@ from scipy import constants
 
 class Geometry:
     """
-    MIM structure geometry
+    Cross-shaped MIM array geometry
 
     self.a (float) : cross arm width (m)
     self.b (float) : cross arm length (m)
@@ -50,20 +52,20 @@ class Materials:
         metal_datafile: str,
         n_model_order: int,
         κ_model_order: int,
-        spectrum_sample_count: int,
+        spectrum_spectrum_sample_count: int,
         debug: bool = False,
     ):
         """
 
         Args:
             oxyde_datafile (str): Excel file with oxyde material property data
-            εr_r_model_order (int): εr_r polynomial model order (default = 9)
-            εr_i_model_order (int): εr_i polynomial model order (default = 12)
+            εr_r_model_order (int): εr.real polynomial model order (default = 9)
+            εr_i_model_order (int): εr.imag polynomial model order (default = 12)
             metal_datafile (str): Excel file with metal material property data
             n_model_order (int): n polynomial model order (default = 3)
             κ_model_order (int): κ polynomial model order (default = 4)
-            spectrum_sample_count (int): number of wavelengths sample in the absorbance
-                                         spectrum
+            spectrum_spectrum_sample_count (int): number of wavelength samples
+                                                  in the absorbance spectrum
             debug (bool): enable/disable plotting of optical data with modeled
                           results, for model validation
 
@@ -77,7 +79,7 @@ class Materials:
             σ (float): metal DC conductivity (ohm * meter)
             τ (float): metal relaxation time (s)
             ω_p (float): metal plasma frequency (Hz)
-            λs (np.ndarray): wavelength domain
+            λs (np.ndarray): wavelength domain (length = spectrum_spectrum_sample_count)
 
         """
 
@@ -88,7 +90,7 @@ class Materials:
         self.metal_datafile: str = metal_datafile
         self.n_model_order: int = n_model_order
         self.κ_model_order: int = κ_model_order
-        self.spectrum_sample_count: int = spectrum_sample_count
+        self.spectrum_sample_count: int = spectrum_spectrum_sample_count
         self.debug: bool = debug
 
         # Declare other class variable types
@@ -104,7 +106,7 @@ class Materials:
         self.λs: np.ndarray
 
         # Load material properties and optical index data for the metal and the oxyde,
-        # fit the polynomial models to the data
+        # fit the polynomial models to the optical property data
         (
             self.εr_r_ox,
             self.εr_i_ox,
@@ -121,8 +123,8 @@ class Materials:
             self.σ,
         ) = self.define_metal_material_properties()
 
-        # Determine wavelength domain (largest common wavelength range between the
-        # metal and oxyde optical data sets loaded from the Excel files)
+        # Determine absorbance spectrum wavelength domain (largest common wavelength
+        # range between the metal and oxyde optical data sets loaded from Excel files)
         λ_min: float = max(λs_metal[0], λs_oxyde[0])
         λ_max: float = min(λs_metal[-1], λs_oxyde[-1])
         self.λs = np.linspace(λ_min * 1e-6, λ_max * 1e-6, self.spectrum_sample_count)
@@ -134,7 +136,7 @@ class Materials:
         Args:
             λ (float): wavelength (m)
 
-        Returns: εr
+        Returns: εr (complex)
 
         """
 
@@ -150,7 +152,7 @@ class Materials:
         Args:
             ω (float): radial frequency (Hz)
 
-        Returns: δ (metal skin depth)
+        Returns: δ (m)
 
         """
 
@@ -189,7 +191,7 @@ class Materials:
         wb.close()
         λs: np.ndarray = n_and_k_data[:, 0]
 
-        # Fit polynomial models to n(λ) and κ(λ), order determined by trial & error
+        # Fit polynomial models to n(λ) and κ(λ), order is determined by trial & error
         n_poly, n_stats = poly.polyfit(
             x=λs, y=n_and_k_data[:, 1], deg=self.n_model_order, full=True
         )
@@ -205,7 +207,7 @@ class Materials:
                 f"metal n.imag model order ({self.κ_model_order}) is too high!"
             )
 
-        # If required, plot data and model estimates for validation of model order
+        # If required, plot data and model estimates for validation of goodness of fit
         if self.debug:
             fig, [ax0, ax1] = plt.subplots(2)
             fig.suptitle(
@@ -236,7 +238,7 @@ class Materials:
 
         NB: the self.debug parameter enables/diables plotting of data & modeling results
 
-        Returns: polynomial models for oxyde complex permittivity components
+        Returns: polynomial models for oxyde relative permittivity components
 
         """
 
@@ -253,7 +255,8 @@ class Materials:
         εr_r: np.ndarray = n_and_k_data[:, 1] ** 2 - n_and_k_data[:, 2] ** 2
         εr_i: np.ndarray = 2 * n_and_k_data[:, 1] * n_and_k_data[:, 2]
 
-        # Fit polynomial models to εr_r(λ) and εr_i(λ), order determined by trial&error
+        # Fit polynomial models to εr.real(λ) and εr.imag(λ), order determined
+        # by trial and error
         εr_r_poly, εr_r_stats = poly.polyfit(
             x=λs, y=εr_r, deg=self.εr_r_model_order, full=True
         )
@@ -269,7 +272,7 @@ class Materials:
                 f"oxyde ε_r.imag model order ({self.εr_i_model_order}) is too high!"
             )
 
-        # If required, plot data and model estimates for validation of model order
+        # If required, plot data and model estimates for validation of goodness of fit
         if self.debug:
             εr_r_modeled: np.ndarray = poly.polyval(λs, εr_r_poly)
             εr_i_modeled: np.ndarray = poly.polyval(λs, εr_i_poly)

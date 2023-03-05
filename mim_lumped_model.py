@@ -26,17 +26,6 @@
         both FWHM and absorption must be considered simultaneously. Since fpeak
         can be independently tuned by b, there exists a set of Λ and a at a given fpeak
         that guarantees a narrow FWHM and a near-unity absorption."
-    2) "The upper limit of Λ is set by the wavelength of operation
-        (i.e., Λ < Λmax =λpeak/(1 + sinθ), where 0 < θ < 90° is the angle of incidence),
-        for Λ exceeding the limit will result in diffraction and the lumped equivalent
-        circuit model is no longer valid. Note that this limit is more stringent
-        (smaller Λmax) at oblique incidence (θ > 0), making the device more susceptible
-        to diffraction. Therefore, to ensure strong absorption over a wide acceptance
-        angle, we choose θ = 30° for the upper limit of Λ (e.g., Λmax ≈ 4 μm
-        for λpeak = 6 μm).
-
-    TODO:
-    1) Angle oblique (hors-normale) d'incidence
 
     Remarks:
     1) type casting with .astype(float) is required to silence mypy warnings, but the
@@ -64,7 +53,7 @@ def c_p(geom: Geometry) -> float:
     Args:
         geom (Geometry): structure geometry
 
-    Returns: Cp
+    Returns: Cp (F)
 
     """
 
@@ -85,7 +74,7 @@ def l_m(geom: Geometry) -> float:
     Args:
         geom (Geometry): structure geometry
 
-    Returns: Lm
+    Returns: Lm (H)
 
     """
 
@@ -97,11 +86,11 @@ def c_m(ω: float, mats: Materials, geom: Geometry) -> complex:
     Equation 3: mutual capacitance at frequency ω
 
     Args:
-        ω (float): radial frequency
+        ω (float): radial frequency (rads/s)
         mats (Materials): material properties
         geom (Geometry): structure geometry
 
-    Returns: Cm
+    Returns: Cm (F)
 
     """
 
@@ -119,11 +108,11 @@ def l_kc(ω: float, mats: Materials, geom: Geometry) -> float:
     Equation 4: metal cross nano-structure kinetic inductance at frequency ω
 
     Args:
-        ω (float): radial frequency
+        ω (float): radial frequency (rads/s)
         mats (Materials): material properties
         geom (Geometry): structure geometry
 
-    Returns: Lk,c
+    Returns: Lk,c (H)
 
     """
 
@@ -137,11 +126,11 @@ def r_c(ω: float, mats: Materials, geom: Geometry) -> float:
     Equation 5: metal cross nano-structure resistance at frequency ω
 
     Args:
-        ω (float): radial frequency
+        ω (float): radial frequency (rads/s)
         mats (Materials): material properties
         geom (Geometry): structure geometry
 
-    Returns: Rc
+    Returns: Rc (ohm)
 
     """
 
@@ -153,10 +142,10 @@ def l_kg(ω: float, mats: Materials) -> float:
     Equation 6: metal ground plane kinetic inductance at frequency ω
 
     Args:
-        ω (float): radial frequency
+        ω (float): radial frequency (rads/s)
         mats (Materials): material properties
 
-    Returns: Lk,g
+    Returns: Lk,g (H)
 
     """
 
@@ -168,10 +157,10 @@ def r_g(ω: float, mats: Materials) -> float:
     Equation 7: metal ground plane resistance at frequency ω
 
     Args:
-        ω (float): radial frequency
+        ω (float): radial frequency (rads/s)
         mats (Materials): material properties
 
-    Returns: Rg
+    Returns: Rg (ohm)
 
     """
 
@@ -183,11 +172,11 @@ def z_cross(ω: float, mats: Materials, geom: Geometry) -> complex:
     Equation S9: complex total impedance Zcross at frequency ω
 
     Args:
-        ω (float): radial frequency
+        ω (float): radial frequency (rads/s)
         mats (Materials): material properties
         geom (Geometry): structure geometry
 
-    Returns: Zcross
+    Returns: Zcross (complex)
 
     """
 
@@ -224,7 +213,7 @@ def absorbance(λ: float, mats: Materials, geom: Geometry) -> float:
         mats (Materials): material properties
         geom (Geometry): structure geometry
 
-    Returns: Absorbance
+    Returns: Absorbance (normalized)
 
     """
 
@@ -265,7 +254,7 @@ def filter_response_metrics(
         b (float): cross arm length (m)
         Λ (float): cross pattern period (m)
 
-    Returns: λ_peak, FWHM, Q, absorbance spectrum
+    Returns: λ_peak (m), FWHM (m), Q, absorbance spectrum
 
     """
 
@@ -460,7 +449,7 @@ def main():
         metal_datafile="Ciesielski-Au.xlsx",
         n_model_order=3,
         κ_model_order=4,
-        spectrum_sample_count=1000,
+        spectrum_spectrum_sample_count=1000,
         debug=False,
     )
 
