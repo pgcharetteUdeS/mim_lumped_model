@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy.polynomial import polynomial as poly
 from openpyxl import load_workbook, Workbook, worksheet
-from scipy import constants
+from scipy import constants as syc
 
 
 class Geometry:
@@ -158,7 +158,7 @@ class Materials:
 
         """
 
-        λ: float = constants.c * (2 * np.pi / ω)
+        λ: float = syc.c * (2 * np.pi / ω)
         κ: float = float(poly.polyval(λ * 1e6, self.κ_metal))
 
         return λ / (2 * np.pi * κ)
@@ -183,7 +183,7 @@ class Materials:
         metal_name: str = properties_ws["B1"].value
         ω_p: float = properties_ws["B2"].value
         τ: float = properties_ws["B3"].value
-        σ: float = constants.epsilon_0 * ω_p**2 * τ
+        σ: float = syc.epsilon_0 * ω_p**2 * τ
 
         # Load optical data (λ, n, k)
         n_and_k_ws: worksheet = wb["n_and_k"]

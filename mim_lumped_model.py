@@ -32,11 +32,12 @@
        code runs correctly without this.
 """
 
+from collections import namedtuple
 from itertools import product
 from matplotlib import use as plt_use
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import constants
+import scipy.constants as syc
 from typing import TypedDict
 
 from materials_and_geometry import Geometry, Materials
@@ -44,6 +45,11 @@ from materials_and_geometry import Geometry, Materials
 
 # Script version
 __version__: str = "2.0"
+
+
+# Constants
+Constants = namedtuple("Constants", "z0")
+constants = Constants(np.sqrt(syc.mu_0 / syc.epsilon_0))
 
 
 def c_p(geom: Geometry) -> float:
@@ -58,7 +64,7 @@ def c_p(geom: Geometry) -> float:
     """
 
     return (
-        (np.pi * constants.epsilon_0)
+        (np.pi * syc.epsilon_0)
         * geom.a
         / np.log(
             2 * (geom.Λ - geom.b) / geom.t_metal
@@ -78,7 +84,7 @@ def l_m(geom: Geometry) -> float:
 
     """
 
-    return 0.5 * constants.mu_0 * geom.t_ox * geom.b / geom.a
+    return 0.5 * syc.mu_0 * geom.t_ox * geom.b / geom.a
 
 
 def c_m(ω: float, mats: Materials, geom: Geometry) -> complex:
@@ -96,8 +102,8 @@ def c_m(ω: float, mats: Materials, geom: Geometry) -> complex:
 
     return (
         geom.c
-        * constants.epsilon_0
-        * mats.ε_ox(λ=constants.c * (2 * np.pi / ω))
+        * syc.epsilon_0
+        * mats.ε_ox(λ=syc.c * (2 * np.pi / ω))
         * (geom.b / 2)
         * (geom.a / geom.t_ox)
     )
@@ -117,7 +123,7 @@ def l_kc(ω: float, mats: Materials, geom: Geometry) -> float:
     """
 
     return (geom.c_prime * geom.b / (geom.a * mats.δ(ω=ω))) * (
-        1 / (constants.epsilon_0 * mats.ω_p**2)
+        1 / (syc.epsilon_0 * mats.ω_p**2)
     )
 
 
@@ -149,7 +155,7 @@ def l_kg(ω: float, mats: Materials) -> float:
 
     """
 
-    return (2 / mats.δ(ω=ω)) * (1 / (constants.epsilon_0 * mats.ω_p**2))
+    return (2 / mats.δ(ω=ω)) * (1 / (syc.epsilon_0 * mats.ω_p**2))
 
 
 def r_g(ω: float, mats: Materials) -> float:
@@ -217,12 +223,13 @@ def absorbance(λ: float, mats: Materials, geom: Geometry) -> float:
 
     """
 
-    z0 = np.sqrt(constants.mu_0 / constants.epsilon_0)
-    ω: float = 2 * np.pi * (constants.c / λ)
+    ω: float = 2 * np.pi * (syc.c / λ)
     z_cross_val: complex = z_cross(ω=ω, mats=mats, geom=geom)
-    r_in: float = np.abs((z_cross_val - z0) / (z_cross_val + z0)) ** 2
+    reflectance: float = (
+        np.abs((z_cross_val - constants.z0) / (z_cross_val + constants.z0)) ** 2
+    )
 
-    return 1 - r_in
+    return 1 - reflectance
 
 
 class FilterResponseMetrics(TypedDict):
@@ -326,7 +333,7 @@ def figure_2d(mats: Materials, geom: Geometry):
         ylabel="Absorbance",
         ylim=([0, 1]),
     )
-    plt.legend(loc="upper right")
+    plt.legend(loc="upper left")
     plt.grid()
     plt.show()
 
