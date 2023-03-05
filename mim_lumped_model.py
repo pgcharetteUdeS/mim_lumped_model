@@ -211,6 +211,7 @@ def z_cross(ω: float, mats: Materials, geom: Geometry) -> complex:
         + 2 * r_c_val
     ) / (2 + s**2 * c_m_val * (l_c + l_g) + s * c_m_val * (r_c_val + r_g_val))
 
+    # Equation S9
     return z_e + z_m
 
 
