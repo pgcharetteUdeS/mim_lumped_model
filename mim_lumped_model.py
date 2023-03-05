@@ -210,6 +210,58 @@ def z_cross(ω: float, mats: Materials, geom: Geometry) -> complex:
     return z_e + z_m
 
 
+def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
+    """
+    Plot complex impedance components as a function of wavelength
+
+    Args:
+        mats (Materials): material properties
+        geom (Geometry): structure geometry
+
+    Returns: None
+
+    """
+
+    # Zcross spectrum
+    z_cross_spectrum: np.ndarray = np.asarray(
+        [z_cross(ω=2 * np.pi * (syc.c / λ), mats=mats, geom=geom) for λ in mats.λs]
+    )
+
+    # Find zero crossing wavelength and value of Zcross.real at that wavelength
+    i: int = np.absolute(z_cross_spectrum.imag - 0).argmin()
+    λ_zero_crossing = mats.λs[i]
+    z_cross_real_at_λ_zero_crossing: float = z_cross_spectrum[i].real
+
+    # Plot
+    fig, axl = plt.subplots()
+    axr = axl.twinx()
+    fig.suptitle(
+        r"Z$_{cross}$ real and imaginary components versus wavelength"
+        "\n"
+        f"a = {geom.a*1e9:.0f} nm, b = {geom.b*1e6:.0f} nm, Λ = {geom.Λ*1e6:.1f} μm"
+    )
+    axl.plot(mats.λs * 1e6, z_cross_spectrum.real, "b")
+    axr.plot(mats.λs * 1e6, z_cross_spectrum.imag, "r")
+    axr.plot(
+        [λ_zero_crossing * 1e6, λ_zero_crossing * 1e6],
+        [z_cross_spectrum.imag.min(), z_cross_spectrum.imag.max()],
+        "r--",
+    )
+    axl.annotate(
+        rf"Z$_{{cross}}$.real @zero crossing of Z$_{{cross}}$.imag = "
+        rf"{z_cross_real_at_λ_zero_crossing:.1f} ($\Omega$)",
+        xy=(λ_zero_crossing * 1e6, z_cross_spectrum.real[i]),
+        xytext=(λ_zero_crossing * 1e6 + 0.25, 5000),
+        arrowprops={"arrowstyle": "->", "color": "black"},
+    )
+    axl.set(xlabel="Wavelength (μm)", ylabel=r"Z$_{cross}$.real ($\Omega$)")
+    axr.set_ylabel(r"Z$_{cross}$.imag ($\Omega$)", color="r")
+    axr.tick_params(axis="y", labelcolor="r")
+    plt.grid()
+
+    return None
+
+
 def absorbance(λ: float, mats: Materials, geom: Geometry) -> float:
     """
     Absorbance at wavelength λ
@@ -462,7 +514,10 @@ def main():
 
     # Define reference structure geometry (see Geometry class declaration
     # for information on the parameters)
-    geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-9, t_metal=100e-9, t_ox=200e-9, c=0.4)
+    geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=100e-9, t_ox=200e-9, c=0.4)
+
+    # Plot Zcross complex impedance components
+    plot_z_cross_spectrum(mats=mats, geom=geom)
 
     # Figure 2d from the paper
     figure_2d(mats=mats, geom=geom)
