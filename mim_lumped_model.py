@@ -214,16 +214,16 @@ def z_cross(ω: float, mats: Materials, geom: Geometry) -> complex:
     return z_e + z_m
 
 
-def absorbance_spectrum(λ: float, mats: Materials, geom: Geometry) -> float:
+def absorbance(λ: float, mats: Materials, geom: Geometry) -> float:
     """
-    Absorbance as a function of wavelength
+    Absorbance at wavelength λ
 
     Args:
         λ (float): wavelength (m)
         mats (Materials): material properties
         geom (Geometry): structure geometry
 
-    Returns: Absorbance spectrum
+    Returns: Absorbance
 
     """
 
@@ -254,7 +254,7 @@ def filter_response_metrics(
     Λ: float,
 ) -> FilterResponseMetrics:
     """
-    Filter response metrics λpeak, FWHM, and Q as a function
+    Filter response metrics λpeak, FWHM, Q, and absorbance spectrum as a function
     of structure geometry parameters a, b, and Λ
 
     Args:
@@ -264,7 +264,7 @@ def filter_response_metrics(
         b (float): cross arm length (m)
         Λ (float): cross pattern period (m)
 
-    Returns: λ_peak, FWHM, Q, array of absorbance
+    Returns: λ_peak, FWHM, Q, absorbance spectrum
 
     """
 
@@ -273,25 +273,25 @@ def filter_response_metrics(
     geom.b = b
     geom.Λ = Λ
 
-    # Absorbance as a function of wavelength
-    absorbance: np.ndarray = np.asarray(
-        [absorbance_spectrum(λ=λ, mats=mats, geom=geom) for λ in mats.λs]
+    # Absorbance as a function of wavelength (absorbance spectrum)
+    absorbance_spectrum: np.ndarray = np.asarray(
+        [absorbance(λ=λ, mats=mats, geom=geom) for λ in mats.λs]
     )
 
     # Find absorbance peak wavelength
-    λ_peak_index = int(absorbance.argmax())
+    λ_peak_index = int(absorbance_spectrum.argmax())
     λ_peak: float = mats.λs[λ_peak_index]
 
     # Determine FWHM numerically from the absorbance spectrum
-    i_left: int = np.absolute(absorbance[:λ_peak_index] - 0.5).argmin()
-    i_right: int = np.absolute(absorbance[λ_peak_index:] - 0.5).argmin()
+    i_left: int = np.absolute(absorbance_spectrum[:λ_peak_index] - 0.5).argmin()
+    i_right: int = np.absolute(absorbance_spectrum[λ_peak_index:] - 0.5).argmin()
     fwhm: float = mats.λs[λ_peak_index + i_right] - mats.λs[i_left]
 
     # Q
     q: float = λ_peak / fwhm
 
     # Return filter metrics and absorbance spectrum
-    return {"λ_peak": λ_peak, "fwhm": fwhm, "q": q, "absorbance": absorbance}
+    return {"λ_peak": λ_peak, "fwhm": fwhm, "q": q, "absorbance": absorbance_spectrum}
 
 
 def figure_2d(mats: Materials, geom: Geometry):
@@ -315,7 +315,7 @@ def figure_2d(mats: Materials, geom: Geometry):
     # Loop to plot absorbance as a function of wavelength for the MIM structures
     fig, ax = plt.subplots()
     for a, b, Λ in zip(a_array, b_array, Λ_array):
-        λ_peak, fwhm, q, absorbance = filter_response_metrics(
+        λ_peak, fwhm, q, absorbance_spectrum = filter_response_metrics(
             mats=mats,
             geom=geom,
             a=a,
@@ -324,7 +324,7 @@ def figure_2d(mats: Materials, geom: Geometry):
         ).values()
         ax.plot(
             mats.λs * 1e6,
-            absorbance,
+            absorbance_spectrum,
             label=rf"λ$_{{peak}}$={λ_peak*1e6:.2f} μm, "
             f"FWHM={fwhm*1e9:.0f} nm, "
             f"Q={q:.1e}\n"
@@ -416,7 +416,7 @@ def figure_3b(mats: Materials, geom: Geometry):
     )
     fig, ax = plt.subplots()
     im = ax.imshow(
-        np.flipud(fwhm_array) * 1e6,
+        np.flipud(fwhm_array) * 1e9,
         aspect="auto",
         interpolation="bilinear",
         extent=[
@@ -432,7 +432,7 @@ def figure_3b(mats: Materials, geom: Geometry):
         xlabel="a (nm)",
         ylabel="Λ (μm)",
     )
-    fig.colorbar(im, label="FWHM (μm)")
+    fig.colorbar(im, label="FWHM (nm)")
 
     return None
 
@@ -450,7 +450,8 @@ def main():
     plt.ion()
 
     # Define metal and oxyde material properties in a Materials class object,
-    # where the data is read from two Excel files
+    # where the data is read from two Excel files (see Materials class declaration
+    # for information on the parameters)
     mats: Materials = Materials(
         oxyde_datafile="Kischkat-SiO2.xlsx",
         εr_r_model_order=9,
@@ -458,10 +459,12 @@ def main():
         metal_datafile="Ciesielski-Au.xlsx",
         n_model_order=3,
         κ_model_order=4,
+        spectrum_sample_count=1000,
         debug=False,
     )
 
-    # Define reference structure geometry
+    # Define reference structure geometry (see Geometry class declaration
+    # for information on the parameters)
     geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-9, t_metal=100e-9, t_ox=200e-9, c=0.4)
 
     # Figure 2d from the paper

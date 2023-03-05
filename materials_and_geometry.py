@@ -50,6 +50,7 @@ class Materials:
         metal_datafile: str,
         n_model_order: int,
         κ_model_order: int,
+        spectrum_sample_count: int,
         debug: bool = False,
     ):
         """
@@ -61,6 +62,8 @@ class Materials:
             metal_datafile (str): Excel file with metal material property data
             n_model_order (int): n polynomial model order (default = 3)
             κ_model_order (int): κ polynomial model order (default = 4)
+            spectrum_sample_count (int): number of wavelengths sample in the absorbance
+                                         spectrum
             debug (bool): enable/disable plotting of optical data with modeled
                           results, for model validation
 
@@ -85,6 +88,7 @@ class Materials:
         self.metal_datafile: str = metal_datafile
         self.n_model_order: int = n_model_order
         self.κ_model_order: int = κ_model_order
+        self.spectrum_sample_count: int = spectrum_sample_count
         self.debug: bool = debug
 
         # Declare other class variable types
@@ -121,7 +125,7 @@ class Materials:
         # metal and oxyde optical data sets loaded from the Excel files)
         λ_min: float = max(λs_metal[0], λs_oxyde[0])
         λ_max: float = min(λs_metal[-1], λs_oxyde[-1])
-        self.λs = np.linspace(λ_min * 1e-6, λ_max * 1e-6, 1000)
+        self.λs = np.linspace(λ_min * 1e-6, λ_max * 1e-6, self.spectrum_sample_count)
 
     def ε_ox(self, λ: float) -> complex:
         """
