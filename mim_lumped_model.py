@@ -44,7 +44,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.1"
+__version__: str = "2.2"
 
 
 # Constants
@@ -214,8 +214,8 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
     """
     Plot complex impedance components as a function of wavelength
 
-    NB: if Zcross.real is unequal to Z0 at the zero-crossing wavelength of Zcross.imag,
-        the absorbance will not reach unity at fpeak!
+    NB: if Zcross.real significantly different from Z0 at the zero-crossing wavelength
+        of Zcross.imag, the absorbance will not reach unity at fpeak!
 
     Args:
         mats (Materials): material properties
@@ -241,7 +241,9 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
     fig.suptitle(
         r"Z$_{cross}$ real and imaginary components versus wavelength"
         "\n"
-        f"a = {geom.a*1e9:.0f} nm, b = {geom.b*1e6:.0f} nm, Λ = {geom.Λ*1e6:.1f} μm"
+        f"a = {geom.a*1e9:.0f} nm, b = {geom.b*1e6:.0f} nm, Λ = {geom.Λ*1e6:.1f} μm\n"
+        rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
+        rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm",
     )
     axl.plot(mats.λs * 1e6, z_cross_spectrum.real, "b")
     axr.plot(mats.λs * 1e6, z_cross_spectrum.imag, "r")
@@ -251,8 +253,8 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
         "r--",
     )
     axl.annotate(
-        rf"Z$_{{cross}}$.real = {z_cross_real_at_λ_zero_crossing:.1f} ($\Omega$)"
-        rf" @zero crossing of Z$_{{cross}}$.imag (λ = {λ_zero_crossing*1e6:.1f} μm)"
+        rf"Z$_{{cross}}$.real = {z_cross_real_at_λ_zero_crossing:.0f} $\Omega$ at the"
+        rf" zero crossing of Z$_{{cross}}$.imag (λ = {λ_zero_crossing*1e6:.2f} μm)"
         "\n"
         rf"NB: if Z$_{{cross}}$.real $\neq$ Z$_0$ ({constants.z0:.0f} $\Omega$), "
         "absorbance at f$_{{peak}}$ will not reach unity",
@@ -386,7 +388,9 @@ def figure_2d(mats: Materials, geom: Geometry):
             f"b={b*1e6:.1f} μm, a={a*1e9:.0f} nm, Λ={Λ*1e6:.1f} μm",
         )
     ax.set(
-        title="Figure 2d : Absorbance(λ)",
+        title="Figure 2d : Absorbance(λ)\n"
+        rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
+        rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm",
         xlabel="Wavelength (μm)",
         ylabel="Absorbance",
         ylim=([0, 1]),
