@@ -372,13 +372,15 @@ def figure_2d(mats: Materials, geom: Geometry):
     # Loop to plot absorbance as a function of wavelength for the MIM structures
     fig, ax = plt.subplots()
     for a, b, Λ in zip(a_array, b_array, Λ_array):
-        λ_peak, fwhm, q, absorbance_spectrum = filter_response_metrics(
-            mats=mats,
-            geom=geom,
-            a=a,
-            b=b,
-            Λ=Λ,
-        ).values()
+        λ_peak, fwhm, q, absorbance_spectrum = list(
+            filter_response_metrics(
+                mats=mats,
+                geom=geom,
+                a=a,
+                b=b,
+                Λ=Λ,
+            ).values()
+        )
         ax.plot(
             mats.λs * 1e6,
             absorbance_spectrum,
