@@ -44,7 +44,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.0"
+__version__: str = "2.1"
 
 
 # Constants
@@ -214,6 +214,9 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
     """
     Plot complex impedance components as a function of wavelength
 
+    NB: if Zcross.real is unequal to Z0 at the zero-crossing wavelength of Zcross.imag,
+        the absorbance will not reach unity at fpeak!
+
     Args:
         mats (Materials): material properties
         geom (Geometry): structure geometry
@@ -227,12 +230,12 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
         [z_cross(ω=2 * np.pi * (syc.c / λ), mats=mats, geom=geom) for λ in mats.λs]
     )
 
-    # Find zero crossing wavelength and value of Zcross.real at that wavelength
+    # Find Zcross.imag zero crossing wavelength and corresponding value of Zcross.real
     i: int = np.absolute(z_cross_spectrum.imag - 0).argmin()
     λ_zero_crossing = mats.λs[i]
     z_cross_real_at_λ_zero_crossing: float = z_cross_spectrum[i].real
 
-    # Plot
+    # Plot real & imaginary components of Zcross as a function of wavelength
     fig, axl = plt.subplots()
     axr = axl.twinx()
     fig.suptitle(
@@ -248,8 +251,11 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
         "r--",
     )
     axl.annotate(
-        rf"Z$_{{cross}}$.real @zero crossing of Z$_{{cross}}$.imag = "
-        rf"{z_cross_real_at_λ_zero_crossing:.1f} ($\Omega$)",
+        rf"Z$_{{cross}}$.real = {z_cross_real_at_λ_zero_crossing:.1f} ($\Omega$)"
+        rf" @zero crossing of Z$_{{cross}}$.imag (λ = {λ_zero_crossing*1e6:.1f} μm)"
+        "\n"
+        rf"NB: if Z$_{{cross}}$.real $\neq$ Z$_0$ ({constants.z0:.0f} $\Omega$), "
+        "absorbance at f$_{{peak}}$ will not reach unity",
         xy=(λ_zero_crossing * 1e6, z_cross_spectrum.real[i]),
         xytext=(λ_zero_crossing * 1e6 + 0.25, 5000),
         arrowprops={"arrowstyle": "->", "color": "black"},
