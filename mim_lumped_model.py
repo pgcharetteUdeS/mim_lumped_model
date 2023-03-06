@@ -27,9 +27,6 @@
         can be independently tuned by b, there exists a set of Λ and a at a given fpeak
         that guarantees a narrow FWHM and a near-unity absorption."
 
-    Remarks:
-    1) type casting with .astype(float) is required to silence mypy warnings, but the
-       code runs correctly without this.
 """
 
 from collections import namedtuple
@@ -372,21 +369,19 @@ def figure_2d(mats: Materials, geom: Geometry):
     # Loop to plot absorbance as a function of wavelength for the MIM structures
     fig, ax = plt.subplots()
     for a, b, Λ in zip(a_array, b_array, Λ_array):
-        λ_peak, fwhm, q, absorbance_spectrum = list(
-            filter_response_metrics(
-                mats=mats,
-                geom=geom,
-                a=a,
-                b=b,
-                Λ=Λ,
-            ).values()
+        response_metrics: FilterResponseMetrics = filter_response_metrics(
+            mats=mats,
+            geom=geom,
+            a=a,
+            b=b,
+            Λ=Λ,
         )
         ax.plot(
             mats.λs * 1e6,
-            absorbance_spectrum,
-            label=rf"λ$_{{peak}}$={λ_peak*1e6:.2f} μm, "
-            f"FWHM={fwhm*1e9:.0f} nm, "
-            f"Q={q:.1e}\n"
+            response_metrics["absorbance"],
+            label=rf"λ$_{{peak}}$={response_metrics['λ_peak']*1e6:.2f} μm, "
+            f"FWHM={response_metrics['fwhm']*1e9:.0f} nm, "
+            f"Q={response_metrics['q']:.1e}\n"
             f"b={b*1e6:.1f} μm, a={a*1e9:.0f} nm, Λ={Λ*1e6:.1f} μm",
         )
     ax.set(
@@ -434,10 +429,10 @@ def figure_3b(mats: Materials, geom: Geometry):
                 a=a_fixed,
                 b=b,
                 Λ=Λ_fixed,
-            ).get("λ_peak")
+            )["λ_peak"]
             for b in b_array
         ]
-    ).astype(float)
+    )
     fig, ax = plt.subplots()
     ax.plot(b_array * 1e6, λ_peak_array * 1e6)
     ax.set(
@@ -458,23 +453,19 @@ def figure_3b(mats: Materials, geom: Geometry):
         b=b_fixed,
         Λ=Λ_fixed,
     )
-    λ_peak_fixed = filter_metrics.get("λ_peak")
-    fwhm_array = (
-        np.asarray(
-            [
-                filter_response_metrics(
-                    mats=mats,
-                    geom=geom,
-                    a=a,
-                    b=b_fixed,
-                    Λ=Λ,
-                ).get("fwhm")
-                for Λ, a in product(Λ_array, a_array)
-            ]
-        )
-        .reshape((len(Λ_array), len(a_array)))
-        .astype(float)
-    )
+    λ_peak_fixed = filter_metrics["λ_peak"]
+    fwhm_array = np.asarray(
+        [
+            filter_response_metrics(
+                mats=mats,
+                geom=geom,
+                a=a,
+                b=b_fixed,
+                Λ=Λ,
+            )["fwhm"]
+            for Λ, a in product(Λ_array, a_array)
+        ]
+    ).reshape((len(Λ_array), len(a_array)))
     fig, ax = plt.subplots()
     im = ax.imshow(
         np.flipud(fwhm_array) * 1e9,
