@@ -217,14 +217,20 @@ class Materials:
                 f"k (order = {self.κ_model_order}) data for {metal_name}\n"
                 rf"ω$_p$ = 2$\pi$ {ω_p/np.pi:.2e} Hz, τ = {τ:.2e} s"
             )
-            ax0.plot(λs, n_and_k_data[:, 1])
-            ax0.plot(λs, poly.polyval(n_and_k_data[:, 0], n_poly), "--")
-            ax0.set(title=f"n (erms = {n_stats[0][0]:.2e})")
+            ax0.plot(λs, n_and_k_data[:, 1], label="data")
+            ax0.plot(λs, poly.polyval(n_and_k_data[:, 0], n_poly), "--", label="model")
+            ax0.set(title=rf"n (e$_{{rms}}$ = {n_stats[0][0]:.2e} RIU)", ylabel="RIU")
             ax0.grid()
-            ax1.plot(λs, n_and_k_data[:, 2])
-            ax1.plot(λs, poly.polyval(n_and_k_data[:, 0], κ_poly), "--")
-            ax1.set(title=f"κ (erms = {κ_stats[0][0]:.2e})", xlabel="Wavelength (μm)")
+            ax0.legend()
+            ax1.plot(λs, n_and_k_data[:, 2], label="data")
+            ax1.plot(λs, poly.polyval(n_and_k_data[:, 0], κ_poly), "--", label="model")
+            ax1.set(
+                title=rf"κ (e$_{{rms}}$ = {κ_stats[0][0]:.2e} RIU)",
+                ylabel="RIU",
+                xlabel="Wavelength (μm)",
+            )
             ax1.grid()
+            ax1.legend()
             plt.tight_layout()
             plt.show()
 
@@ -278,25 +284,23 @@ class Materials:
         if self.debug:
             εr_r_modeled: np.ndarray = poly.polyval(λs, εr_r_poly)
             εr_i_modeled: np.ndarray = poly.polyval(λs, εr_i_poly)
-            common_term: np.ndarray = np.sqrt(εr_r_modeled**2 + εr_i_modeled**2)
-            n_modeled: np.ndarray = np.sqrt(0.5 * (common_term + εr_r_modeled))
-            κ_modeled: np.ndarray = np.sqrt(0.5 * (common_term - εr_r_modeled))
-
             fig, [ax0, ax1] = plt.subplots(2)
             fig.suptitle(
-                f"Model fits to εr.real (order = {self.εr_r_model_order}) & "
-                f"εr.imag (order = {self.εr_i_model_order}) data for {oxyde_name}"
+                rf"Model fits to ε$_r$.real (order = {self.εr_r_model_order}) & "
+                rf"ε$_r$.imag (order = {self.εr_i_model_order}) data for {oxyde_name}"
             )
-            ax0.plot(λs, n_and_k_data[:, 1])
-            ax0.plot(λs, n_modeled, "--")
-            ax0.set(title=f"n (erms = {εr_r_stats[0][0]:.2e})")
+            ax0.plot(λs, εr_r, label="data")
+            ax0.plot(λs, εr_r_modeled, "--", label="model")
+            ax0.set(title=rf"ε$_r$.real (e$_{{rms}}$ = {εr_r_stats[0][0]:.2e})")
+            ax0.legend()
             ax0.grid()
-            ax1.plot(λs, n_and_k_data[:, 2])
-            ax1.plot(λs, κ_modeled, "--")
+            ax1.plot(λs, εr_i, label="data")
+            ax1.plot(λs, εr_i_modeled, "--", label="model")
             ax1.set(
-                title=f"κ (erms = {εr_i_stats[0][0]:.2e})",
+                title=rf"ε$_r$.imag (e$_{{rms}}$ = {εr_i_stats[0][0]:.2e})",
                 xlabel="Wavelength (μm)",
             )
+            ax1.legend()
             ax1.grid()
             plt.tight_layout()
             plt.show()

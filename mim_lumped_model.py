@@ -44,7 +44,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.2"
+__version__: str = "2.3"
 
 
 # Constants
@@ -513,13 +513,13 @@ def main():
     # for information on the parameters)
     mats: Materials = Materials(
         oxyde_datafile="Kischkat-SiO2.xlsx",
-        εr_r_model_order=9,
-        εr_i_model_order=12,
+        εr_r_model_order=7,
+        εr_i_model_order=7,
         metal_datafile="Ciesielski-Au.xlsx",
         n_model_order=3,
         κ_model_order=4,
         absorbance_spectrum_sample_count=1000,
-        debug=False,
+        debug=True,
     )
 
     # Define the reference structure geometry (see Geometry class declaration
