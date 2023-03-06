@@ -214,8 +214,8 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
     """
     Plot complex impedance components as a function of wavelength
 
-    NB: if Zcross.real significantly different from Z0 at the zero-crossing wavelength
-        of Zcross.imag, the absorbance will not reach unity at fpeak!
+    NB: if Zcross.real is significantly different from Z0 at the zero-crossing
+        wavelength of Zcross.imag, the absorbance will not reach unity at fpeak!
 
     Args:
         mats (Materials): material properties
@@ -522,17 +522,17 @@ def main():
         debug=False,
     )
 
-    # Define reference structure geometry (see Geometry class declaration
+    # Define the reference structure geometry (see Geometry class declaration
     # for information on the parameters)
     geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=100e-9, t_ox=200e-9, c=0.4)
 
-    # Plot Zcross complex impedance components
+    # Plot Zcross complex impedance components for the reference structure geometry
     plot_z_cross_spectrum(mats=mats, geom=geom)
 
-    # Figure 2d from the paper
+    # Figure 2d from the paper, absorbance(λ) for different structure geometries
     figure_2d(mats=mats, geom=geom)
 
-    # Figure 3b from the paper
+    # Figure 3b from the paper, λpeak(b), with 2D map of FWHM(Λ, a)
     figure_3b(mats=mats, geom=geom)
 
     return None
