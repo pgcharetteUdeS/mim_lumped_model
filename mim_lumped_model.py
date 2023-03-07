@@ -2,8 +2,8 @@
 
     Script qui utilise le modèle groupé de l'article "Ultra‐Narrowband Metamaterial
     Absorbers for High Spectral Resolution Infrared Spectroscopy" [Kang, 2019] pour
-    faire le calcul de la réponse d'un filtre à base d'un réseau de
-    nano-structures MIM en forme de croix.
+    modéliser la réponse d'un filtre à base d'un réseau de nano-structures MIM
+    en forme de croix.
 
     Auteur: Paul Charette
 
@@ -12,14 +12,14 @@
         de fichiers Excel lors de la création de l'objet de classe Materials dans
         la fonction main(), voir les exemples "Ciesielski-Au.xlsx" et
         "Kischkat-SiO2.xlsx" pour le format des fichiers.
-    2)  Les propriétés optiques des matériaux sont modélisées par des polynômes dont
-        les ordres sont spécifiés lors de la création de l'objet de classe Materials,
-        il faut valider visuellement les modèles avec le paramètre "debug=True".
-    3)  La géométrie de référence des structures MIM est spécifiée lors de la création
-        de l'objet de classe Geometry dans la fonction main().
-    4)  La plage des longueurs d'onde prises en compte dans les calculs est
+    2)  La plage des longueurs d'onde prises en compte dans les calculs est
         la portion commune des plages de longueurs d'onde des données optiques
         pour le metal et l'oxyde lues dans les deux fichiers Excel.
+    3)  Les propriétés optiques des matériaux sont modélisées par des polynômes dont
+        les ordres sont spécifiés lors de la création de l'objet de classe Materials,
+        il faut valider visuellement les modèles avec le paramètre "debug=True".
+    4)  La géométrie de référence des structures MIM est spécifiée lors de la création
+        de l'objet de classe Geometry dans la fonction main().
 
     Remarques importantes dans la publie:
     1) "When designing an optimized MIM IR absorber with a high spectral selectivity,
@@ -28,7 +28,8 @@
         that guarantees a narrow FWHM and a near-unity absorption."
 
 """
-
+import os
+import time
 from collections import namedtuple
 from itertools import product
 from matplotlib import use as plt_use
@@ -497,9 +498,15 @@ def main():
 
     """
 
+    # Show script name (without full path) and version on console
+    print(f"{os.path.basename(__file__)} v{__version__}")
+
     # matplotlib non-blocking mode, working back-end
     plt_use("TkAgg")
     plt.ion()
+
+    # Store start time
+    start_time: float = time.time()
 
     # Define metal and oxyde material properties in a Materials class object,
     # where the data is read from two Excel files (see Materials class declaration
@@ -527,6 +534,9 @@ def main():
 
     # Figure 3b from the paper, λpeak(b), with 2D map of FWHM(Λ, a)
     figure_3b(mats=mats, geom=geom)
+
+    # Show running time on console
+    print(f"Running time : {time.time() - start_time:.2f} s")
 
     return None
 
