@@ -42,7 +42,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.3"
+__version__: str = "2.4"
 
 
 # Constants
@@ -82,7 +82,7 @@ def l_m(geom: Geometry) -> float:
 
     """
 
-    return 0.5 * syc.mu_0 * geom.t_ox * geom.b / geom.a
+    return (1 / 2) * syc.mu_0 * geom.t_ox * geom.b / geom.a
 
 
 def c_m(ω: float, mats: Materials, geom: Geometry) -> complex:
@@ -228,42 +228,58 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
         [z_cross(ω=2 * np.pi * (syc.c / λ), mats=mats, geom=geom) for λ in mats.λs]
     )
 
+    # Find min|Zcross| wavelength and max|Zcross|
+    z_cross_max: float = np.abs(z_cross_spectrum).max()
+    n_min: int = np.abs(z_cross_spectrum).argmin()
+    z_cross_min: float = np.abs(z_cross_spectrum)[n_min]
+    λ_z_cross_min: float = mats.λs[n_min]
+
     # Find Zcross.imag zero crossing wavelength and corresponding value of Zcross.real
-    i: int = np.absolute(z_cross_spectrum.imag - 0).argmin()
-    λ_zero_crossing = mats.λs[i]
-    z_cross_real_at_λ_zero_crossing: float = z_cross_spectrum[i].real
+    n_zc: int = np.absolute(z_cross_spectrum.imag - 0).argmin()
+    λ_zero_crossing: float = mats.λs[n_zc]
+    z_cross_real_at_λ_zero_crossing: float = z_cross_spectrum[n_zc].real
 
     # Plot real & imaginary components of Zcross as a function of wavelength
-    fig, axl = plt.subplots()
-    axr = axl.twinx()
+    fig, [ax1, ax2] = plt.subplots(2)
+    ax2r = ax2.twinx()
     fig.suptitle(
-        r"Z$_{cross}$ real and imaginary components versus wavelength"
+        r"Z$_{cross}$(λ)"
         "\n"
         f"a = {geom.a*1e9:.0f} nm, b = {geom.b*1e6:.0f} nm, Λ = {geom.Λ*1e6:.1f} μm\n"
         rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
         rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm",
     )
-    axl.plot(mats.λs * 1e6, z_cross_spectrum.real, "b")
-    axr.plot(mats.λs * 1e6, z_cross_spectrum.imag, "r")
-    axr.plot(
+    ax1.plot(mats.λs * 1e6, np.abs(z_cross_spectrum))
+    ax1.annotate(
+        rf"min(|Z$_{{cross}}$|) = {z_cross_min:.1f} $\Omega$ "
+        f"at λ = {λ_z_cross_min*1e6:.2f} μm",
+        xy=(λ_z_cross_min * 1e6, z_cross_min),
+        xytext=(λ_z_cross_min * 1e6 + 0.25, z_cross_max / 2),
+        arrowprops={"arrowstyle": "->", "color": "black"},
+    )
+    ax1.set(ylabel=r"|Z$_{cross}$| ($\Omega$)")
+    ax1.grid()
+    ax2.plot(mats.λs * 1e6, z_cross_spectrum.real, "b")
+    ax2r.plot(mats.λs * 1e6, z_cross_spectrum.imag, "r")
+    ax2r.plot(
         [λ_zero_crossing * 1e6, λ_zero_crossing * 1e6],
         [z_cross_spectrum.imag.min(), z_cross_spectrum.imag.max()],
         "r--",
     )
-    axl.annotate(
+    ax2.annotate(
         rf"Z$_{{cross}}$.real = {z_cross_real_at_λ_zero_crossing:.0f} $\Omega$ at the"
         rf" zero crossing of Z$_{{cross}}$.imag (λ = {λ_zero_crossing*1e6:.2f} μm)"
         "\n"
         rf"NB: if Z$_{{cross}}$.real $\neq$ Z$_0$ ({constants.z0:.0f} $\Omega$), "
         "absorbance at f$_{{peak}}$ will not reach unity",
-        xy=(λ_zero_crossing * 1e6, z_cross_spectrum.real[i]),
-        xytext=(λ_zero_crossing * 1e6 + 0.25, 5000),
+        xy=(λ_zero_crossing * 1e6, z_cross_spectrum.real[n_zc]),
+        xytext=(λ_zero_crossing * 1e6 + 0.25, z_cross_max / 5),
         arrowprops={"arrowstyle": "->", "color": "black"},
     )
-    axl.set(xlabel="Wavelength (μm)", ylabel=r"Z$_{cross}$.real ($\Omega$)")
-    axr.set_ylabel(r"Z$_{cross}$.imag ($\Omega$)", color="r")
-    axr.tick_params(axis="y", labelcolor="r")
-    plt.grid()
+    ax2.set(xlabel="Wavelength (μm)", ylabel=r"Z$_{cross}$.real ($\Omega$)")
+    ax2r.set_ylabel(r"Z$_{cross}$.imag ($\Omega$)", color="r")
+    ax2r.tick_params(axis="y", labelcolor="r")
+    ax2.grid()
 
     return None
 
