@@ -521,7 +521,16 @@ def main():
     """
 
     # Show Python interpreter version, script name & version on console
-    print(f"{os.path.basename(__file__)} {__version__}\nPython {sys.version}")
+    python_version = (
+        str(sys.version_info.major)
+        + "."
+        + str(sys.version_info.minor)
+        + "."
+        + str(sys.version_info.micro)
+    )
+    print(
+        f"{os.path.basename(__file__)} {__version__} (running Python {python_version})"
+    )
 
     # matplotlib non-blocking mode, working back-end
     plt_use("TkAgg")
