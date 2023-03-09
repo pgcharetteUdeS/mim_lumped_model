@@ -239,7 +239,7 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
     λ_zero_crossing: float = mats.λs[n_zc]
     z_cross_real_at_λ_zero_crossing: float = z_cross_spectrum[n_zc].real
 
-    # Plot real & imaginary components of Zcross as a function of wavelength
+    # Plot Zcross n & k as a function of wavelength
     fig, [ax1, ax2] = plt.subplots(2)
     ax2r = ax2.twinx()
     fig.suptitle(
@@ -250,6 +250,11 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
         rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm",
     )
     ax1.plot(mats.λs * 1e6, np.abs(z_cross_spectrum))
+    ax1.plot(
+        [λ_z_cross_min * 1e6, λ_z_cross_min * 1e6],
+        [z_cross_min, z_cross_max],
+        "r--",
+    )
     ax1.annotate(
         rf"min(|Z$_{{cross}}$|) = {z_cross_min:.1f} $\Omega$ "
         f"at λ = {λ_z_cross_min*1e6:.2f} μm",
