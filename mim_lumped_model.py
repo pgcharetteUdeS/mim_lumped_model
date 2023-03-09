@@ -29,6 +29,7 @@
 
 """
 import os
+import sys
 import time
 from collections import namedtuple
 from itertools import product
@@ -519,8 +520,8 @@ def main():
 
     """
 
-    # Show script name (without full path) and version on console
-    print(f"{os.path.basename(__file__)} v{__version__}")
+    # Show Python interpreter version, script name & version on console
+    print(f"{os.path.basename(__file__)} {__version__}\nPython {sys.version}")
 
     # matplotlib non-blocking mode, working back-end
     plt_use("TkAgg")
