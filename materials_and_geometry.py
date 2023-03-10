@@ -65,7 +65,7 @@ class Materials:
             n_model_order (int): n polynomial model order (default = 3)
             κ_model_order (int): κ polynomial model order (default = 4)
             absorbance_spectrum_sample_count (int): number of wavelength samples
-                                                   in the absorbance spectrum
+                                                    in the absorbance spectrum
             debug (bool): enable/disable plotting of optical data with modeled
                           results, for model validation
 
@@ -78,7 +78,7 @@ class Materials:
             metal_name (str): name of metal
             σ (float): metal DC conductivity (1/(ohm * meter))
             τ (float): metal relaxation time (s)
-            ω_p (float): metal plasma frequency (Hz)
+            ω_p (float): metal plasma frequency (rads/s)
             λs (np.ndarray): wavelength domain (len = absorbance_spectrum_sample_count)
 
         """
@@ -138,7 +138,7 @@ class Materials:
         Args:
             λ (float): wavelength (m)
 
-        Returns: εr (complex)
+        Returns: εr (complex, unit-less)
 
         """
 
