@@ -43,7 +43,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.5"
+__version__: str = "2.6"
 
 
 # Constants
@@ -312,6 +312,57 @@ def absorbance(λ: float, mats: Materials, geom: Geometry) -> float:
     return 1 - reflectance
 
 
+def plot_absorbances(
+    mats: Materials, geom: Geometry, geometries: np.ndarray, title: str
+):
+    """
+    Combined absorbance plots for MIMs of different geometries
+
+    Args:
+        mats (Materials): material properties
+        geom (Geometry): reference structure geometry
+        geometries (np.ndarray): MIMs geometries as array of [a, b, Λ] value triplets
+        title (str): plot title
+
+    Returns: None
+
+    """
+
+    # Convert geometry "array of arrays" to "list of dictionaries", for code clarity
+    absorbers: list = [dict(zip(["a", "b", "Λ"], g)) for g in geometries]
+
+    # Loop to plot the absorbance for the different geometries
+    fig, ax = plt.subplots()
+    for absorber in absorbers:
+        response_metrics: FilterResponseMetrics = filter_response_metrics(
+            mats=mats,
+            geom=geom,
+            a=absorber["a"],
+            b=absorber["b"],
+            Λ=absorber["Λ"],
+        )
+        ax.plot(
+            mats.λs * 1e6,
+            response_metrics["absorbance"],
+            label=rf"λ$_{{peak}}$={response_metrics['λ_peak']*1e6:.2f} μm, "
+            f"FWHM={response_metrics['fwhm']*1e9:.0f} nm, "
+            f"Q={response_metrics['q']:.1e}\n"
+            f"a={absorber['a']*1e9:.0f} nm, "
+            f"b={absorber['b']*1e6:.1f} μm, "
+            f"Λ={absorber['Λ']*1e6:.1f} μm",
+        )
+    ax.set(
+        title=f"{title}\n"
+        rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
+        rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm",
+        xlabel="Wavelength (μm)",
+        ylabel="Absorbance",
+        ylim=([0, 1]),
+    )
+    plt.legend(loc="upper left")
+    plt.grid()
+
+
 class FilterResponseMetrics(TypedDict):
     """
     Typed dictionary data type for filter_response_metrics() return values
@@ -373,8 +424,7 @@ def filter_response_metrics(
 
 def figure_2d(mats: Materials, geom: Geometry):
     """
-    Plot Figure 2d from the paper (absorbance as a function of wavelength for different
-    MIM geometries specified by the parameters a, b, and Λ).
+    Plot Figure 2d from the paper
 
     Args:
         mats (Materials): material properties
@@ -384,40 +434,18 @@ def figure_2d(mats: Materials, geom: Geometry):
 
     """
 
-    # Arrays of cross widths (a), lengths (b) and periods (Λ) for the MIM structures
-    a_array: np.ndarray = np.asarray([150, 200, 300, 350]) * 1e-9
-    b_array: np.ndarray = np.asarray([1.5, 1.7, 1.9, 2.1]) * 1e-6
-    Λ_array: np.ndarray = np.asarray([3.6, 3.8, 4.0, 4.2]) * 1e-6
-
-    # Loop to plot absorbance as a function of wavelength for the MIM structures
-    fig, ax = plt.subplots()
-    for a, b, Λ in zip(a_array, b_array, Λ_array):
-        response_metrics: FilterResponseMetrics = filter_response_metrics(
-            mats=mats,
-            geom=geom,
-            a=a,
-            b=b,
-            Λ=Λ,
-        )
-        ax.plot(
-            mats.λs * 1e6,
-            response_metrics["absorbance"],
-            label=rf"λ$_{{peak}}$={response_metrics['λ_peak']*1e6:.2f} μm, "
-            f"FWHM={response_metrics['fwhm']*1e9:.0f} nm, "
-            f"Q={response_metrics['q']:.1e}\n"
-            f"a={a*1e9:.0f} nm, b={b*1e6:.1f} μm, Λ={Λ*1e6:.1f} μm",
-        )
-    ax.set(
-        title="Figure 2d : Absorbance(λ)\n"
-        rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
-        rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm",
-        xlabel="Wavelength (μm)",
-        ylabel="Absorbance",
-        ylim=([0, 1]),
+    # MIM geometries: triplets of a(m), b (m), Λ(m)
+    geometries: np.ndarray = np.asarray(
+        [
+            [150, 1.5, 3.6],
+            [200, 1.7, 3.8],
+            [300, 1.9, 4.0],
+            [350, 2.1, 4.2],
+        ]
+    ) * [1e-9, 1e-6, 1e-6]
+    plot_absorbances(
+        mats=mats, geom=geom, geometries=geometries, title="Figure 2d : Absorbance (λ)"
     )
-    plt.legend(loc="upper left")
-    plt.grid()
-    plt.show()
 
     return None
 
@@ -433,52 +461,32 @@ def figure_3a(mats: Materials, geom: Geometry):
     Returns: None
 
     """
-    dims: list = ["a", "b", "Λ"]
-    absorbers: list = [
-        dict(zip(dims, [150, 1.3, 3.0])),
-        dict(zip(dims, [150, 1.4, 3.2])),
-        dict(zip(dims, [200, 1.5, 3.4])),
-        dict(zip(dims, [200, 1.6, 3.6])),
-        dict(zip(dims, [200, 1.7, 3.6])),
-        dict(zip(dims, [200, 1.8, 3.8])),
-        dict(zip(dims, [200, 1.9, 4.0])),
-        dict(zip(dims, [300, 2.0, 4.0])),
-        dict(zip(dims, [300, 2.1, 4.0])),
-        dict(zip(dims, [300, 2.2, 4.0])),
-        dict(zip(dims, [300, 2.3, 4.0])),
-        dict(zip(dims, [300, 2.4, 4.0])),
-    ]
 
-    fig, ax = plt.subplots()
-    for absorber in absorbers:
-        response_metrics: FilterResponseMetrics = filter_response_metrics(
-            mats=mats,
-            geom=geom,
-            a=absorber["a"] * 1e-9,
-            b=absorber["b"] * 1e-6,
-            Λ=absorber["Λ"] * 1e-6,
-        )
-        ax.plot(
-            mats.λs * 1e6,
-            response_metrics["absorbance"],
-            label=rf"λ$_{{peak}}$={response_metrics['λ_peak']*1e6:.2f} μm, "
-            f"FWHM={response_metrics['fwhm']*1e9:.0f} nm, "
-            f"Q={response_metrics['q']:.1e}\n"
-            f"a={absorber['a']:.0f} nm, "
-            f"b={absorber['b']:.1f} μm, "
-            f"Λ={absorber['Λ']:.1f} μm",
-        )
-    ax.set(
-        title="Figure 3a : Absorbance(λ) for the 12 MIM IR absorbers\n"
-        rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
-        rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm",
-        xlabel="Wavelength (μm)",
-        ylabel="Absorbance",
-        ylim=([0, 1]),
+    # MIM geometries: triplets of a(m), b (m), Λ(m)
+    geometries: np.ndarray = np.asarray(
+        [
+            [150, 1.3, 3.0],
+            [150, 1.4, 3.2],
+            [200, 1.5, 3.4],
+            [200, 1.6, 3.6],
+            [200, 1.7, 3.6],
+            [200, 1.8, 3.8],
+            [200, 1.9, 4.0],
+            [300, 2.0, 4.0],
+            [300, 2.1, 4.0],
+            [300, 2.2, 4.0],
+            [300, 2.3, 4.0],
+            [300, 2.4, 4.0],
+        ]
+    ) * [1e-9, 1e-6, 1e-6]
+    plot_absorbances(
+        mats=mats,
+        geom=geom,
+        geometries=geometries,
+        title="Figure 3a : Absorbance(λ) for the 12 MIM IR absorbers",
     )
-    plt.legend(loc="upper left")
-    plt.grid()
-    plt.show()
+
+    return None
 
 
 def figure_3b(mats: Materials, geom: Geometry):
@@ -616,15 +624,14 @@ def main():
     # for information on the parameters)
     geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=100e-9, t_ox=200e-9, c=0.4)
 
-    # Plot Zcross complex impedance components for the reference structure geometry
+    # Plot complex impedance for the reference structure geometry (Zcross)
     plot_z_cross_spectrum(mats=mats, geom=geom)
 
-    # Figure 2d from the paper
+    # Plot figures from the paper
     figure_2d(mats=mats, geom=geom)
-
-    # Figures 3a & 3b from the paper
     figure_3a(mats=mats, geom=geom)
     figure_3b(mats=mats, geom=geom)
+    plt.show()
 
     # Show running time on console
     print(f"Running time : {time.time() - start_time:.2f} s")
