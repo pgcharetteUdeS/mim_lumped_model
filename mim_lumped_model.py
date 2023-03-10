@@ -353,8 +353,14 @@ def plot_absorbances(
         )
     ax.set(
         title=f"{title}\n"
+        f"{mats.metal_name} ("
         rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
-        rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm",
+        rf"ω$_p$ = 2$\pi$ {mats.ω_p/np.pi:.2e} Hz, τ = {mats.τ:.2e} s, "
+        f"{mats.metal_datafile}), "
+        f"{mats.oxyde_name} ("
+        rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm, "
+        f"{mats.oxyde_datafile}), "
+        f"c = {geom.c: .2f}",
         xlabel="Wavelength (μm)",
         ylabel="Absorbance",
         ylim=([0, 1]),
@@ -411,8 +417,16 @@ def filter_response_metrics(
     λ_peak: float = mats.λs[λ_peak_index]
 
     # Determine FWHM numerically from the absorbance spectrum
-    i_left: int = np.absolute(absorbance_spectrum[:λ_peak_index] - 0.5).argmin()
-    i_right: int = np.absolute(absorbance_spectrum[λ_peak_index:] - 0.5).argmin()
+    i_left: int = (
+        np.absolute(absorbance_spectrum[:λ_peak_index] - 0.5).argmin()
+        if len(absorbance_spectrum[:λ_peak_index]) > 0
+        else 0
+    )
+    i_right: int = (
+        np.absolute(absorbance_spectrum[λ_peak_index:] - 0.5).argmin()
+        if len(absorbance_spectrum[λ_peak_index:]) > 0
+        else 0
+    )
     fwhm: float = mats.λs[λ_peak_index + i_right] - mats.λs[i_left]
 
     # Q
@@ -611,7 +625,8 @@ def main():
     # for information on the parameters)
     # metal_datafile: str = "Ciesielski-Au.xlsx"
     metal_datafile: str = "Rakic-LD.xlsx"
-    oxyde_datafile: str = "Kischkat-SiO2.xlsx"
+    # oxyde_datafile: str = "Kischkat-SiO2.xlsx"
+    oxyde_datafile: str = "SiO2-2.06.xlsx"
     mats: Materials = Materials(
         oxyde_datafile=oxyde_datafile,
         εr_r_model_order=7,
@@ -632,7 +647,7 @@ def main():
 
     # Plot figures from the paper
     figure_2d(mats=mats, geom=geom)
-    figure_3a(mats=mats, geom=geom)
+    # figure_3a(mats=mats, geom=geom)
     figure_3b(mats=mats, geom=geom)
     plt.show()
 
