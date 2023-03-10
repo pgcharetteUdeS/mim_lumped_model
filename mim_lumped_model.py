@@ -43,7 +43,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.4"
+__version__: str = "2.5"
 
 
 # Constants
@@ -405,7 +405,7 @@ def figure_2d(mats: Materials, geom: Geometry):
             label=rf"λ$_{{peak}}$={response_metrics['λ_peak']*1e6:.2f} μm, "
             f"FWHM={response_metrics['fwhm']*1e9:.0f} nm, "
             f"Q={response_metrics['q']:.1e}\n"
-            f"b={b*1e6:.1f} μm, a={a*1e9:.0f} nm, Λ={Λ*1e6:.1f} μm",
+            f"a={a*1e9:.0f} nm, b={b*1e6:.1f} μm, Λ={Λ*1e6:.1f} μm",
         )
     ax.set(
         title="Figure 2d : Absorbance(λ)\n"
@@ -420,6 +420,65 @@ def figure_2d(mats: Materials, geom: Geometry):
     plt.show()
 
     return None
+
+
+def figure_3a(mats: Materials, geom: Geometry):
+    """
+    Plot Figure 3a from the paper
+
+    Args:
+        mats (Materials): material properties
+        geom (Geometry): reference structure geometry
+
+    Returns: None
+
+    """
+    dims: list = ["a", "b", "Λ"]
+    absorbers: list = [
+        dict(zip(dims, [150, 1.3, 3.0])),
+        dict(zip(dims, [150, 1.4, 3.2])),
+        dict(zip(dims, [200, 1.5, 3.4])),
+        dict(zip(dims, [200, 1.6, 3.6])),
+        dict(zip(dims, [200, 1.7, 3.6])),
+        dict(zip(dims, [200, 1.8, 3.8])),
+        dict(zip(dims, [200, 1.9, 4.0])),
+        dict(zip(dims, [300, 2.0, 4.0])),
+        dict(zip(dims, [300, 2.1, 4.0])),
+        dict(zip(dims, [300, 2.2, 4.0])),
+        dict(zip(dims, [300, 2.3, 4.0])),
+        dict(zip(dims, [300, 2.4, 4.0])),
+    ]
+
+    fig, ax = plt.subplots()
+    for absorber in absorbers:
+        response_metrics: FilterResponseMetrics = filter_response_metrics(
+            mats=mats,
+            geom=geom,
+            a=absorber["a"] * 1e-9,
+            b=absorber["b"] * 1e-6,
+            Λ=absorber["Λ"] * 1e-6,
+        )
+        ax.plot(
+            mats.λs * 1e6,
+            response_metrics["absorbance"],
+            label=rf"λ$_{{peak}}$={response_metrics['λ_peak']*1e6:.2f} μm, "
+            f"FWHM={response_metrics['fwhm']*1e9:.0f} nm, "
+            f"Q={response_metrics['q']:.1e}\n"
+            f"a={absorber['a']:.0f} nm, "
+            f"b={absorber['b']:.1f} μm, "
+            f"Λ={absorber['Λ']:.1f} μm",
+        )
+    ax.set(
+        title="Figure 3a : Absorbance(λ) for the 12 MIM IR absorbers\n"
+        rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
+        rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm",
+        xlabel="Wavelength (μm)",
+        ylabel="Absorbance",
+        ylim=([0, 1]),
+    )
+    plt.legend(loc="upper left")
+    plt.grid()
+    plt.show()
 
 
 def figure_3b(mats: Materials, geom: Geometry):
@@ -560,10 +619,11 @@ def main():
     # Plot Zcross complex impedance components for the reference structure geometry
     plot_z_cross_spectrum(mats=mats, geom=geom)
 
-    # Figure 2d from the paper, absorbance(λ) for different structure geometries
+    # Figure 2d from the paper
     figure_2d(mats=mats, geom=geom)
 
-    # Figure 3b from the paper, λpeak(b), with 2D map of FWHM(Λ, a)
+    # Figures 3a & 3b from the paper
+    figure_3a(mats=mats, geom=geom)
     figure_3b(mats=mats, geom=geom)
 
     # Show running time on console
