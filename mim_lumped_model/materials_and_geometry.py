@@ -178,7 +178,7 @@ class Materials:
         """
 
         # Load ωp and τ metal properties
-        wb: Workbook = load_workbook(self.metal_datafile)
+        wb: Workbook = load_workbook(f"data/{self.metal_datafile}")
         properties_ws: worksheet = wb["properties"]
         metal_name: str = properties_ws["B1"].value
         ω_p: float = properties_ws["B2"].value
@@ -188,7 +188,7 @@ class Materials:
         # Load optical data (λ, n, k)
         n_and_k_ws: worksheet = wb["n_and_k"]
         n_and_k_data: np.ndarray = np.array(
-            list(n_and_k_ws.iter_rows(min_row=2, values_only=True))
+            list(n_and_k_ws.iter_rows(min_row=2, max_col=3, values_only=True))
         ).astype(np.float64)
         wb.close()
         λs: np.ndarray = n_and_k_data[:, 0]
@@ -213,19 +213,23 @@ class Materials:
         if self.debug:
             fig, [ax0, ax1] = plt.subplots(2)
             fig.suptitle(
-                f"Model fits to n (order = {self.n_model_order}) & "
-                f"k (order = {self.κ_model_order}) data for {metal_name}\n"
+                f"Model fits to n & k data for {metal_name} ({self.metal_datafile})\n"
                 rf"ω$_p$ = 2$\pi$ {ω_p/np.pi:.2e} Hz, τ = {τ:.2e} s"
             )
             ax0.plot(λs, n_and_k_data[:, 1], label="data")
             ax0.plot(λs, poly.polyval(n_and_k_data[:, 0], n_poly), "--", label="model")
-            ax0.set(title=rf"n (e$_{{rms}}$ = {n_stats[0][0]:.2e} RIU)", ylabel="RIU")
+            ax0.set(
+                title=rf"n (order = {self.n_model_order}, "
+                f"e$_{{rms}}$ = {n_stats[0][0]:.2e} RIU)",
+                ylabel="RIU",
+            )
             ax0.grid()
             ax0.legend()
             ax1.plot(λs, n_and_k_data[:, 2], label="data")
             ax1.plot(λs, poly.polyval(n_and_k_data[:, 0], κ_poly), "--", label="model")
             ax1.set(
-                title=rf"κ (e$_{{rms}}$ = {κ_stats[0][0]:.2e} RIU)",
+                title=rf"κ (order = {self.κ_model_order}, "
+                f"e$_{{rms}}$ = {κ_stats[0][0]:.2e} RIU)",
                 ylabel="RIU",
                 xlabel="Wavelength (μm)",
             )
@@ -251,12 +255,12 @@ class Materials:
         """
 
         # Load optical data (λ, n, k) from the Excel file worksheet
-        wb: Workbook = load_workbook(self.oxyde_datafile)
+        wb: Workbook = load_workbook(f"data/{self.oxyde_datafile}")
         properties_ws: worksheet = wb["properties"]
         oxyde_name: str = properties_ws["B1"].value
         n_and_k_ws: worksheet = wb["n_and_k"]
         n_and_k_data: np.ndarray = np.array(
-            list(n_and_k_ws.iter_rows(min_row=2, values_only=True))
+            list(n_and_k_ws.iter_rows(min_row=2, max_col=3, values_only=True))
         ).astype(np.float64)
         wb.close()
         λs: np.ndarray = n_and_k_data[:, 0]
@@ -286,18 +290,22 @@ class Materials:
             εr_i_modeled: np.ndarray = poly.polyval(λs, εr_i_poly)
             fig, [ax0, ax1] = plt.subplots(2)
             fig.suptitle(
-                rf"Model fits to ε$_r$.real (order = {self.εr_r_model_order}) & "
-                rf"ε$_r$.imag (order = {self.εr_i_model_order}) data for {oxyde_name}"
+                rf"Model fits to ε$_r$ real & imaginary component data for {oxyde_name}"
+                f" ({self.oxyde_datafile})"
             )
             ax0.plot(λs, εr_r, label="data")
             ax0.plot(λs, εr_r_modeled, "--", label="model")
-            ax0.set(title=rf"ε$_r$.real (e$_{{rms}}$ = {εr_r_stats[0][0]:.2e})")
+            ax0.set(
+                title=rf"ε$_r$.real (order = {self.εr_r_model_order}, "
+                f"e$_{{rms}}$ = {εr_r_stats[0][0]:.2e})"
+            )
             ax0.legend()
             ax0.grid()
             ax1.plot(λs, εr_i, label="data")
             ax1.plot(λs, εr_i_modeled, "--", label="model")
             ax1.set(
-                title=rf"ε$_r$.imag (e$_{{rms}}$ = {εr_i_stats[0][0]:.2e})",
+                title=rf"ε$_r$.imag (order = {self.εr_i_model_order}, "
+                f"e$_{{rms}}$ = {εr_i_stats[0][0]:.2e})",
                 xlabel="Wavelength (μm)",
             )
             ax1.legend()

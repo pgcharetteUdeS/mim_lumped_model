@@ -43,7 +43,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.6"
+__version__: str = "2.7"
 
 
 # Constants
@@ -353,14 +353,12 @@ def plot_absorbances(
         )
     ax.set(
         title=f"{title}\n"
-        f"{mats.metal_name} ("
-        rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
+        f"{mats.metal_name} ({mats.metal_datafile}) : "
         rf"ω$_p$ = 2$\pi$ {mats.ω_p/np.pi:.2e} Hz, τ = {mats.τ:.2e} s, "
-        f"{mats.metal_datafile}), "
-        f"{mats.oxyde_name} ("
-        rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm, "
-        f"{mats.oxyde_datafile}), "
-        f"c = {geom.c: .2f}",
+        rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
+        f"c = {geom.c: .2f}\n"
+        f"{mats.oxyde_name} ({mats.oxyde_datafile}) : "
+        rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm",
         xlabel="Wavelength (μm)",
         ylabel="Absorbance",
         ylim=([0, 1]),
@@ -622,11 +620,11 @@ def main():
 
     # Define metal and oxyde material properties in a Materials class object,
     # where the data is read from two Excel files (see Materials class declaration
-    # for information on the parameters)
+    # for information on the class variables)
     # metal_datafile: str = "Ciesielski-Au.xlsx"
     metal_datafile: str = "Rakic-LD.xlsx"
-    # oxyde_datafile: str = "Kischkat-SiO2.xlsx"
-    oxyde_datafile: str = "SiO2-2.06.xlsx"
+    oxyde_datafile: str = "Kischkat-SiO2.xlsx"
+    # oxyde_datafile: str = "SiO2-1.729epsilon-5.5um.xlsx"
     mats: Materials = Materials(
         oxyde_datafile=oxyde_datafile,
         εr_r_model_order=7,
