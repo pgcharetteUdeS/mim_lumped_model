@@ -609,11 +609,14 @@ def main():
     # Define metal and oxyde material properties in a Materials class object,
     # where the data is read from two Excel files (see Materials class declaration
     # for information on the parameters)
+    # metal_datafile: str = "Ciesielski-Au.xlsx"
+    metal_datafile: str = "Rakic-LD.xlsx"
+    oxyde_datafile: str = "Kischkat-SiO2.xlsx"
     mats: Materials = Materials(
-        oxyde_datafile="Kischkat-SiO2.xlsx",
+        oxyde_datafile=oxyde_datafile,
         εr_r_model_order=7,
         εr_i_model_order=7,
-        metal_datafile="Ciesielski-Au.xlsx",
+        metal_datafile=metal_datafile,
         n_model_order=3,
         κ_model_order=4,
         absorbance_spectrum_sample_count=1000,
