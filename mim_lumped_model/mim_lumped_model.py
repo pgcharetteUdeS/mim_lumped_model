@@ -8,13 +8,13 @@
     Auteur: Paul Charette
 
     NB:
-    1)  Les propriétés des matériaux pour le métal et l'oxyde sont lues à partir
+    1)  Les propriétés des matériaux pour le métal et l'isolant sont lues à partir
         de fichiers Excel lors de la création de l'objet de classe Materials dans
         la fonction main(), voir les exemples "Ciesielski-Au.xlsx" et
         "Kischkat-SiO2.xlsx" pour le format des fichiers.
     2)  La plage des longueurs d'onde prises en compte dans les calculs est
         la portion commune des plages de longueurs d'onde des données optiques
-        pour le metal et l'oxyde lues dans les deux fichiers Excel.
+        pour le metal et l'isolant lues dans les deux fichiers Excel.
     3)  Les propriétés optiques des matériaux sont modélisées par des polynômes dont
         les ordres sont spécifiés lors de la création de l'objet de classe Materials,
         il faut valider visuellement les modèles avec le paramètre "debug=True".
@@ -43,7 +43,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.7"
+__version__: str = "2.8"
 
 
 # Constants
@@ -83,7 +83,7 @@ def l_m(geom: Geometry) -> float:
 
     """
 
-    return (1 / 2) * syc.mu_0 * geom.t_ox * geom.b / geom.a
+    return (1 / 2) * syc.mu_0 * geom.t_ins * geom.b / geom.a
 
 
 def c_m(ω: float, mats: Materials, geom: Geometry) -> complex:
@@ -102,9 +102,9 @@ def c_m(ω: float, mats: Materials, geom: Geometry) -> complex:
     return (
         geom.c
         * syc.epsilon_0
-        * mats.ε_ox(λ=syc.c * (2 * np.pi / ω))
+        * mats.ε_ins(λ=syc.c * (2 * np.pi / ω))
         * (geom.b / 2)
-        * (geom.a / geom.t_ox)
+        * (geom.a / geom.t_ins)
     )
 
 
@@ -248,7 +248,7 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
         "\n"
         f"a = {geom.a*1e9:.0f} nm, b = {geom.b*1e6:.0f} nm, Λ = {geom.Λ*1e6:.1f} μm\n"
         rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
-        rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm",
+        rf"t$_{{ins}}$ = {geom.t_ins * 1e9:.1f} nm",
     )
     ax1.plot(mats.λs * 1e6, np.abs(z_cross_spectrum))
     ax1.plot(
@@ -357,8 +357,8 @@ def plot_absorbances(
         rf"ω$_p$ = 2$\pi$ {mats.ω_p/np.pi:.2e} Hz, τ = {mats.τ:.2e} s, "
         rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
         f"c = {geom.c: .2f}\n"
-        f"{mats.oxyde_name} ({mats.oxyde_datafile}) : "
-        rf"t$_{{ox}}$ = {geom.t_ox*1e9:.1f} nm",
+        f"{mats.insulator_name} ({mats.insulator_datafile}) : "
+        rf"t$_{{ins}}$ = {geom.t_ins * 1e9:.1f} nm",
         xlabel="Wavelength (μm)",
         ylabel="Absorbance",
         ylim=([0, 1]),
@@ -618,27 +618,25 @@ def main():
     # Store start time
     start_time: float = time.time()
 
-    # Define metal and oxyde material properties in a Materials class object,
+    # Define metal and insulator material properties in a Materials class object,
     # where the data is read from two Excel files (see Materials class declaration
     # for information on the class variables)
-    # metal_datafile: str = "Ciesielski-Au.xlsx"
     metal_datafile: str = "Rakic-LD.xlsx"
-    oxyde_datafile: str = "Kischkat-SiO2.xlsx"
-    # oxyde_datafile: str = "SiO2-1.729epsilon-5.5um.xlsx"
+    insulator_datafile: str = "SiO2-1.729epsilon-5.5um.xlsx"
     mats: Materials = Materials(
-        oxyde_datafile=oxyde_datafile,
-        εr_r_model_order=7,
-        εr_i_model_order=7,
+        insulator_datafile=insulator_datafile,
+        insulator_εr_r_model_order=7,
+        insulator_εr_i_model_order=7,
         metal_datafile=metal_datafile,
-        n_model_order=3,
-        κ_model_order=4,
+        metal_n_model_order=3,
+        metal_κ_model_order=4,
         absorbance_spectrum_sample_count=1000,
         debug=True,
     )
 
     # Define the reference structure geometry (see Geometry class declaration
     # for information on the parameters)
-    geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=100e-9, t_ox=200e-9, c=0.4)
+    geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=100e-9, t_ins=200e-9, c=0.4)
 
     # Plot complex impedance for the reference structure geometry (Zcross)
     plot_z_cross_spectrum(mats=mats, geom=geom)
@@ -647,6 +645,38 @@ def main():
     figure_2d(mats=mats, geom=geom)
     # figure_3a(mats=mats, geom=geom)
     figure_3b(mats=mats, geom=geom)
+
+    # Plot absorbance for "custome" cases
+    metal_datafile = "Ciesielski-Au.xlsx"
+    insulator_datafile = "Kischkat-SiO2.xlsx"
+    mats = Materials(
+        insulator_datafile=insulator_datafile,
+        insulator_εr_r_model_order=7,
+        insulator_εr_i_model_order=7,
+        metal_datafile=metal_datafile,
+        metal_n_model_order=3,
+        metal_κ_model_order=4,
+        absorbance_spectrum_sample_count=1500,
+    )
+    geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=50e-9, t_ins=200e-9, c=0.4)
+    geometries: np.ndarray = np.asarray(
+        [
+            [100, 1.3, 3.6],
+            [150, 1.5, 3.6],
+            [200, 1.7, 3.8],
+            [200, 1.9, 3.8],
+            [250, 2.1, 4.0],
+            [300, 2.3, 4.0],
+        ]
+    ) * [1e-9, 1e-6, 1e-6]
+    plot_absorbances(
+        mats=mats,
+        geom=geom,
+        geometries=geometries,
+        title="Absorbance (λ) - custom case",
+    )
+
+    # Show all figures
     plt.show()
 
     # Show running time on console
