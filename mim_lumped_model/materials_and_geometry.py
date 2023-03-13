@@ -60,9 +60,7 @@ class Materials:
         Args:
             insulator_datafile (str): Excel file with insulator material property data
             insulator_εr_r_model_order (int): insulator εr.real polynomial model order
-                                              (default = 9)
             insulator_εr_i_model_order (int): insulator εr.imag polynomial model order
-                                              (default = 12)
             metal_datafile (str): Excel file with metal material property data
             metal_n_model_order (int): metal n polynomial model order (default = 3)
             metal_κ_model_order (int): metal κ polynomial model order (default = 4)
@@ -81,7 +79,10 @@ class Materials:
             σ (float): metal DC conductivity (1/(ohm * meter))
             τ (float): metal relaxation time (s)
             ω_p (float): metal plasma frequency (rads/s)
-            λs (np.ndarray): wavelength domain (len = absorbance_spectrum_sample_count)
+            λs (np.ndarray): absorbance spectra wavelength domain (largest common
+                             wavelength range between metal and insulator optical
+                             data sets loaded from Excel files, where the number of
+                             samples = absorbance_spectrum_sample_count)
 
         """
 
@@ -195,7 +196,7 @@ class Materials:
         wb.close()
         λs: np.ndarray = n_and_k_data[:, 0]
 
-        # Fit polynomial models to n(λ) and κ(λ), order is determined by trial & error
+        # Fit polynomial models to n(λ) and κ(λ)
         n_poly, n_stats = poly.polyfit(
             x=λs, y=n_and_k_data[:, 1], deg=self.metal_n_model_order, full=True
         )
@@ -256,7 +257,7 @@ class Materials:
 
         """
 
-        # Load optical data (λ, n, k) from the Excel file worksheet
+        # Load optical data (λ, n, k)
         wb: Workbook = load_workbook(f"data/{self.insulator_datafile}")
         properties_ws: worksheet = wb["properties"]
         insulator_name: str = properties_ws["B1"].value
@@ -269,8 +270,7 @@ class Materials:
         εr_r: np.ndarray = n_and_k_data[:, 1] ** 2 - n_and_k_data[:, 2] ** 2
         εr_i: np.ndarray = 2 * n_and_k_data[:, 1] * n_and_k_data[:, 2]
 
-        # Fit polynomial models to εr.real(λ) and εr.imag(λ), order determined
-        # by trial and error
+        # Fit polynomial models to εr.real(λ) and εr.imag(λ)
         εr_r_poly, εr_r_stats = poly.polyfit(
             x=λs, y=εr_r, deg=self.insulator_εr_r_model_order, full=True
         )
