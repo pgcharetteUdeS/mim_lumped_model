@@ -1,6 +1,6 @@
 """mim_lumped_model.py
 
-    Script qui utilise le modèle groupé de l'article "Ultra‐Narrowband Metamaterial
+    Script qui utilise le modèle RLC groupé de l'article "Ultra‐Narrowband Metamaterial
     Absorbers for High Spectral Resolution Infrared Spectroscopy" [Kang, 2019] pour
     modéliser la réponse d'un filtre à base d'un réseau de nano-structures MIM
     en forme de croix.
