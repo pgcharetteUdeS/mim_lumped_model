@@ -601,11 +601,9 @@ def main():
 
     # Show Python interpreter version, script name & version on console
     python_version = (
-        str(sys.version_info.major)
-        + "."
-        + str(sys.version_info.minor)
-        + "."
-        + str(sys.version_info.micro)
+        f"{str(sys.version_info.major)}"
+        f".{str(sys.version_info.minor)}"
+        f".{str(sys.version_info.micro)}"
     )
     print(
         f"{os.path.basename(__file__)} {__version__} (running Python {python_version})"
@@ -618,11 +616,8 @@ def main():
     # Store start time
     start_time: float = time.time()
 
-    # Define metal and insulator material properties in a Materials class object,
-    # where the data is read from two Excel files (see Materials class declaration
-    # for information on the class variables)
-    metal_datafile: str = "Rakic-LD.xlsx"
     insulator_datafile: str = "SiO2-1.729epsilon-5.5um.xlsx"
+    metal_datafile: str = "Rakic-LD.xlsx"
     mats: Materials = Materials(
         insulator_datafile=insulator_datafile,
         insulator_εr_r_model_order=7,
