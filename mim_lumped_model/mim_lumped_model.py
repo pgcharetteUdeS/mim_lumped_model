@@ -43,7 +43,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.8"
+__version__: str = "2.9"
 
 
 # Constants

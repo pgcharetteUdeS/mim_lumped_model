@@ -5,6 +5,7 @@
 """
 __all__ = ["Geometry", "Materials"]
 
+from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.polynomial import polynomial as poly
@@ -12,6 +13,7 @@ from openpyxl import load_workbook, Workbook, worksheet
 from scipy import constants as syc
 
 
+@dataclass
 class Geometry:
     """
     Cross-shaped MIM array geometry
@@ -26,77 +28,58 @@ class Geometry:
 
     """
 
-    def __init__(
-        self, a: float, b: float, Λ: float, t_metal: float, t_ins: float, c: float
-    ):
-        self.a = a
-        self.b = b
-        self.Λ = Λ
-        self.t_metal = t_metal
-        self.t_ins = t_ins
-        self.c = c
-        self.c_prime = 1 - c
+    a: float
+    b: float
+    Λ: float
+    t_metal: float
+    t_ins: float
+    c: float
+
+    def __post_init__(self):
+        self.c_prime = 1 - self.c
 
 
+@dataclass
 class Materials:
     """
     Metal and insulator material properties
 
+    insulator_datafile (str): Excel file with insulator material property data
+    insulator_εr_r_model_order (int): insulator εr.real polynomial model order
+    insulator_εr_i_model_order (int): insulator εr.imag polynomial model order
+    metal_datafile (str): Excel file with metal material property data
+    metal_n_model_order (int): metal n polynomial model order (default = 3)
+    metal_κ_model_order (int): metal κ polynomial model order (default = 4)
+    absorbance_spectrum_sample_count (int): number of wavelength samples
+                                            in the absorbance spectrum
+    debug (bool): enable/disable plotting of optical data with modeled
+                  results, for model validation
     """
 
-    def __init__(
-        self,
-        insulator_datafile: str,
-        insulator_εr_r_model_order: int,
-        insulator_εr_i_model_order: int,
-        metal_datafile: str,
-        metal_n_model_order: int,
-        metal_κ_model_order: int,
-        absorbance_spectrum_sample_count: int,
-        debug: bool = False,
-    ):
-        """
+    insulator_datafile: str
+    insulator_εr_r_model_order: int
+    insulator_εr_i_model_order: int
+    metal_datafile: str
+    metal_n_model_order: int
+    metal_κ_model_order: int
+    absorbance_spectrum_sample_count: int
+    debug: bool = False
 
-        Args:
-            insulator_datafile (str): Excel file with insulator material property data
-            insulator_εr_r_model_order (int): insulator εr.real polynomial model order
-            insulator_εr_i_model_order (int): insulator εr.imag polynomial model order
-            metal_datafile (str): Excel file with metal material property data
-            metal_n_model_order (int): metal n polynomial model order (default = 3)
-            metal_κ_model_order (int): metal κ polynomial model order (default = 4)
-            absorbance_spectrum_sample_count (int): number of wavelength samples
-                                                    in the absorbance spectrum
-            debug (bool): enable/disable plotting of optical data with modeled
-                          results, for model validation
-
-        Other class variables:
-            insulator_εr_r (np.ndarray): insulator εr.real polynomial model coefficients
-            insulator_εr_i (np.ndarray): insulator εr.imag polynomial model coefficients
-            insulator_name (str): name of insulator
-            metal_n (np.ndarray): metal n polynomial model coefficients
-            metal_κ (np.ndarray): metal κ polynomial model coefficients
-            metal_name (str): name of metal
-            σ (float): metal DC conductivity (1/(ohm * meter))
-            τ (float): metal relaxation time (s)
-            ω_p (float): metal plasma frequency (rads/s)
-            λs (np.ndarray): absorbance spectra wavelength domain (largest common
-                             wavelength range between metal and insulator optical
-                             data sets loaded from Excel files, where the number of
-                             samples = absorbance_spectrum_sample_count)
-
-        """
-
-        # Initialize class instance variables
-        self.insulator_datafile: str = insulator_datafile
-        self.insulator_εr_r_model_order: int = insulator_εr_r_model_order
-        self.insulator_εr_i_model_order: int = insulator_εr_i_model_order
-        self.metal_datafile: str = metal_datafile
-        self.metal_n_model_order: int = metal_n_model_order
-        self.metal_κ_model_order: int = metal_κ_model_order
-        self.absorbance_spectrum_sample_count: int = absorbance_spectrum_sample_count
-        self.debug: bool = debug
-
-        # Declare other class variable types
+    def __post_init__(self):
+        # Declare other class variable types:
+        # - insulator_εr_r (np.ndarray): insulator εr.real polynomial model coefficients
+        # - insulator_εr_i (np.ndarray): insulator εr.imag polynomial model coefficients
+        # - insulator_name (str): name of insulator
+        # - metal_n (np.ndarray): metal n polynomial model coefficients
+        # - metal_κ (np.ndarray): metal κ polynomial model coefficients
+        # - metal_name (str): name of metal
+        # - σ (float): metal DC conductivity (1/(ohm * meter))
+        # - τ (float): metal relaxation time (s)
+        # - ω_p (float): metal plasma frequency (rads/s)
+        # - λs (np.ndarray): absorbance spectra wavelength domain (largest common
+        #                    wavelength range between metal and insulator optical
+        #                    data sets loaded from Excel files, where the number of
+        #                    samples = absorbance_spectrum_sample_count)
         self.insulator_εr_r: np.ndarray
         self.insulator_εr_i: np.ndarray
         self.insulator_name: str
