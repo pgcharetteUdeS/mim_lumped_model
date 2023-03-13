@@ -644,6 +644,7 @@ def main():
     # Plot absorbance for "custome" cases
     metal_datafile = "Ciesielski-Au.xlsx"
     insulator_datafile = "Kischkat-SiO2.xlsx"
+    insulator_datafile = "SiO2-1.729epsilon-5.5um.xlsx"
     mats = Materials(
         insulator_datafile=insulator_datafile,
         insulator_εr_r_model_order=7,
