@@ -18,13 +18,13 @@ class Geometry:
     """
     Cross-shaped MIM array geometry
 
-    self.a (float) : cross arm width (m)
-    self.b (float) : cross arm length (m)
-    self.Λ (float) : cross pattern period (m)
-    self.t_metal (float) : cross metal film thickness (m)
-    self.t_ins (float) : insulator spacer film thickness (m)
-    self.c (float) : constant chosen to take the fringe effect of the capacitance
-                     and nonuniform electric field distribution into consideration
+    a (float) : cross arm width (m)
+    b (float) : cross arm length (m)
+    Λ (float) : cross pattern period (m)
+    t_metal (float) : cross metal film thickness (m)
+    t_ins (float) : insulator spacer film thickness (m)
+    c (float) : constant chosen to take the fringe effect of the capacitance and
+                nonuniform electric field distribution into consideration ([Kang, 2019])
 
     """
 

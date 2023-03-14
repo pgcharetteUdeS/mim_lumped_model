@@ -7,20 +7,6 @@
 
     Auteur: Paul Charette
 
-    NB:
-    1)  Les propriétés des matériaux pour le métal et l'isolant sont lues à partir
-        de fichiers Excel lors de la création de l'objet de classe Materials dans
-        la fonction main(), voir les exemples "Ciesielski-Au.xlsx" et
-        "Kischkat-SiO2.xlsx" pour le format des fichiers.
-    2)  La plage des longueurs d'onde prises en compte dans les calculs est
-        la portion commune des plages de longueurs d'onde des données optiques
-        pour le metal et l'isolant lues dans les deux fichiers Excel.
-    3)  Les propriétés optiques des matériaux sont modélisées par des polynômes dont
-        les ordres sont spécifiés lors de la création de l'objet de classe Materials,
-        il faut valider visuellement les modèles avec le paramètre "debug=True".
-    4)  La géométrie de référence des structures MIM est spécifiée lors de la création
-        de l'objet de classe Geometry dans la fonction main().
-
     Remarques importantes dans la publie:
     1) "When designing an optimized MIM IR absorber with a high spectral selectivity,
         both FWHM and absorption must be considered simultaneously. Since fpeak
@@ -613,9 +599,10 @@ def main():
     plt_use("TkAgg")
     plt.ion()
 
-    # Store start time
+    # Start time
     start_time: float = time.time()
 
+    # Define the material properties for the metal and the insulator
     insulator_datafile: str = "SiO2-1.729epsilon-5.5um.xlsx"
     metal_datafile: str = "Rakic-LD.xlsx"
     mats: Materials = Materials(
@@ -629,11 +616,10 @@ def main():
         debug=True,
     )
 
-    # Define the reference structure geometry (see Geometry class declaration
-    # for information on the parameters)
+    # Define the reference structure geometry
     geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=100e-9, t_ins=200e-9, c=0.4)
 
-    # Plot complex impedance for the reference structure geometry (Zcross)
+    # Plot the complex impedance for the reference structure geometry (Zcross)
     plot_z_cross_spectrum(mats=mats, geom=geom)
 
     # Plot figures from the paper
