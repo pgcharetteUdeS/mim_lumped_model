@@ -298,11 +298,11 @@ def absorbance(λ: float, mats: Materials, geom: Geometry) -> float:
     return 1 - reflectance
 
 
-def plot_absorbances(
+def plot_absorbance_spectra(
     mats: Materials, geom: Geometry, geometries: np.ndarray, title: str
 ):
     """
-    Combined absorbance plots for MIMs of different geometries
+    Combined absorbance spectrum plots for MIMs of different geometries
 
     Args:
         mats (Materials): material properties
@@ -441,7 +441,7 @@ def figure_2d(mats: Materials, geom: Geometry):
             [350, 2.1, 4.2],
         ]
     ) * [1e-9, 1e-6, 1e-6]
-    plot_absorbances(
+    plot_absorbance_spectra(
         mats=mats, geom=geom, geometries=geometries, title="Figure 2d : Absorbance (λ)"
     )
 
@@ -477,7 +477,7 @@ def figure_3a(mats: Materials, geom: Geometry):
             [300, 2.4, 4.0],
         ]
     ) * [1e-9, 1e-6, 1e-6]
-    plot_absorbances(
+    plot_absorbance_spectra(
         mats=mats,
         geom=geom,
         geometries=geometries,
@@ -630,7 +630,7 @@ def main():
     # Plot absorbance for "custome" cases
     metal_datafile = "Ciesielski-Au.xlsx"
     insulator_datafile = "Kischkat-SiO2.xlsx"
-    insulator_datafile = "SiO2-1.729epsilon-5.5um.xlsx"
+    #insulator_datafile = "SiO2-1.729epsilon-5.5um.xlsx"
     mats = Materials(
         insulator_datafile=insulator_datafile,
         insulator_εr_r_model_order=7,
@@ -651,7 +651,7 @@ def main():
             [300, 2.3, 4.0],
         ]
     ) * [1e-9, 1e-6, 1e-6]
-    plot_absorbances(
+    plot_absorbance_spectra(
         mats=mats,
         geom=geom,
         geometries=geometries,
