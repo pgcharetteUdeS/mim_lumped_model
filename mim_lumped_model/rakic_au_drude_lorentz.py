@@ -138,6 +138,6 @@ def rakic_gold_drude_lorentz_model():
         }
     )
     df2 = pd.DataFrame({"wavelength (um)": λs * 1e6, "n": n, "k": k})
-    with pd.ExcelWriter("data/Rakic-Au.xlsx") as writer:
+    with pd.ExcelWriter("../data/Rakic-Au.xlsx") as writer:
         df1.to_excel(writer, sheet_name="properties", index=False, header=False)
         df2.to_excel(writer, sheet_name="n_and_k", index=False)

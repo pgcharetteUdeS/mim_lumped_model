@@ -628,7 +628,7 @@ def main():
 
     # Plot figures from the paper
     figure_2d(mats=mats, geom=geom)
-    #figure_3a(mats=mats, geom=geom)
+    # figure_3a(mats=mats, geom=geom)
     figure_3b(mats=mats, geom=geom)
 
     # Plot absorbance for "custome" cases
