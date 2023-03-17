@@ -200,7 +200,7 @@ class Materials:
             fig, [ax0, ax1] = plt.subplots(2)
             fig.suptitle(
                 f"Model fits to n & k data for {metal_name} ({self.metal_datafile})\n"
-                rf"ω$_p$ = 2$\pi$ {ω_p/np.pi:.2e} Hz, τ = {τ:.2e} s"
+                rf"ω$_p$ = 2$\pi$ {ω_p/(2*np.pi):.2e} Hz, τ = {τ:.2e} s"
             )
             ax0.plot(λs, n_and_k_data[:, 1], label="data")
             ax0.plot(λs, poly.polyval(n_and_k_data[:, 0], n_poly), "--", label="model")

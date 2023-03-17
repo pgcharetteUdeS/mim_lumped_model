@@ -25,11 +25,12 @@ import numpy as np
 import scipy.constants as syc
 from typing import TypedDict
 
+from rakic_au_drude_lorentz import rakic_gold_drude_lorentz_model
 from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.9"
+__version__: str = "2.10"
 
 
 # Constants
@@ -340,7 +341,7 @@ def plot_absorbance_spectra(
     ax.set(
         title=f"{title}\n"
         f"{mats.metal_name} ({mats.metal_datafile}) : "
-        rf"ω$_p$ = 2$\pi$ {mats.ω_p/np.pi:.2e} Hz, τ = {mats.τ:.2e} s, "
+        rf"ω$_p$ = 2$\pi$ {mats.ω_p/(2*np.pi):.2e} Hz, τ = {mats.τ:.2e} s, "
         rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
         f"c = {geom.c: .2f}\n"
         f"{mats.insulator_name} ({mats.insulator_datafile}) : "
@@ -602,9 +603,12 @@ def main():
     # Start time
     start_time: float = time.time()
 
+    # Generate the Drude-Lorentz model for the metal, if required
+    # rakic_gold_drude_lorentz_model()
+
     # Define the material properties for the metal and the insulator
     insulator_datafile: str = "SiO2-1.729epsilon-5.5um.xlsx"
-    metal_datafile: str = "Rakic-LD.xlsx"
+    metal_datafile: str = "Rakic-Au.xlsx"
     mats: Materials = Materials(
         insulator_datafile=insulator_datafile,
         insulator_εr_r_model_order=7,
@@ -624,13 +628,11 @@ def main():
 
     # Plot figures from the paper
     figure_2d(mats=mats, geom=geom)
-    # figure_3a(mats=mats, geom=geom)
+    #figure_3a(mats=mats, geom=geom)
     figure_3b(mats=mats, geom=geom)
 
     # Plot absorbance for "custome" cases
-    metal_datafile = "Ciesielski-Au.xlsx"
     insulator_datafile = "Kischkat-SiO2.xlsx"
-    #insulator_datafile = "SiO2-1.729epsilon-5.5um.xlsx"
     mats = Materials(
         insulator_datafile=insulator_datafile,
         insulator_εr_r_model_order=7,
