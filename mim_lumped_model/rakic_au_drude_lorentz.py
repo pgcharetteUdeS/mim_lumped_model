@@ -2,7 +2,7 @@
 
 Dielectric function of gold over a range of wavelengths with the Drude-Lorentz model by:
     Optical properties of metallic films for vertical-cavity optoelectronic devices
-    Rakic, M. et al. J. Appl. Phys. 2000, 87, 1–8.
+    Rakic, et al. J. Appl. Phys. 2000, 87, 1–8.
     https://opg.optica.org/ao/abstract.cfm?uri=ao-37-22-5271
 
 """
