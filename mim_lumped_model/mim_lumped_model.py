@@ -25,12 +25,12 @@ import numpy as np
 import scipy.constants as syc
 from typing import TypedDict
 
-from rakic_au_drude_lorentz import rakic_gold_drude_lorentz_model
+from rakic_au_drude_lorentz import rakic_au_drude_lorentz
 from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.10"
+__version__: str = "2.11"
 
 
 # Constants
@@ -603,19 +603,23 @@ def main():
     # Start time
     start_time: float = time.time()
 
-    # Generate the Drude-Lorentz model for the metal, if required
-    # rakic_gold_drude_lorentz_model()
+    # Generate Drude-Lorentz model for the metal (can be commented out after first run)
+    rakic_au_drude_lorentz(λ_min=3e-6, λ_max=8e-6, n=100)
+
+    # Show figures
+    plt.show()
 
     # Define the material properties for the metal and the insulator
-    insulator_datafile: str = "SiO2-1.729epsilon-5.5um.xlsx"
-    metal_datafile: str = "Rakic-Au.xlsx"
+    # insulator_datafile: str = "SiO2-1.729epsilon-5.5um.xlsx"
+    insulator_datafile = "Kischkat-SiO2.xlsx"
+    metal_datafile: str = "Rakic-Au-DL.xlsx"
     mats: Materials = Materials(
         insulator_datafile=insulator_datafile,
         insulator_εr_r_model_order=7,
         insulator_εr_i_model_order=7,
         metal_datafile=metal_datafile,
         metal_n_model_order=3,
-        metal_κ_model_order=4,
+        metal_κ_model_order=3,
         absorbance_spectrum_sample_count=1000,
         debug=True,
     )
@@ -631,7 +635,7 @@ def main():
     # figure_3a(mats=mats, geom=geom)
     figure_3b(mats=mats, geom=geom)
 
-    # Plot absorbance for "custome" cases
+    # Plot absorbance for "custom" cases
     insulator_datafile = "Kischkat-SiO2.xlsx"
     mats = Materials(
         insulator_datafile=insulator_datafile,
@@ -639,7 +643,7 @@ def main():
         insulator_εr_i_model_order=7,
         metal_datafile=metal_datafile,
         metal_n_model_order=3,
-        metal_κ_model_order=4,
+        metal_κ_model_order=3,
         absorbance_spectrum_sample_count=1500,
     )
     geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=50e-9, t_ins=200e-9, c=0.4)
@@ -659,9 +663,6 @@ def main():
         geometries=geometries,
         title="Absorbance (λ) - custom case",
     )
-
-    # Show all figures
-    plt.show()
 
     # Show running time on console
     print(f"Running time : {time.time() - start_time:.2f} s")

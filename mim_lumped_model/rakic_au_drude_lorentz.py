@@ -1,10 +1,12 @@
 """
-Optical properties of metallic films for vertical-cavity optoelectronic devices
-Rakic, M. et al. J. Appl. Phys. 2000, 87, 1–8.
-https://opg.optica.org/ao/abstract.cfm?uri=ao-37-22-5271
+
+Dielectric function of gold over a range of wavelengths with the Drude-Lorentz model by:
+    Optical properties of metallic films for vertical-cavity optoelectronic devices
+    Rakic, M. et al. J. Appl. Phys. 2000, 87, 1–8.
+    https://opg.optica.org/ao/abstract.cfm?uri=ao-37-22-5271
 
 """
-__all__ = ["rakic_gold_drude_lorentz_model"]
+__all__ = ["rakic_au_drude_lorentz"]
 
 from dataclasses import dataclass
 import numpy as np
@@ -19,35 +21,39 @@ class Oscillator:
     Drude-Lorentz oscillator parameters
 
     f: strength
-    Γ_ev: 1/lifetime (1/eV)
-    ω_ev: frequency (eV)
+    Γ: 1/lifetime (1/eV)
+    ω: frequency (eV)
     """
 
     f: float
-    Γ_ev: float
-    ω_ev: float
+    Γ: float
+    ω: float
 
 
-def drude_lorentz(λ) -> tuple[float, float, float, float]:
+def rakic(λ: float) -> tuple[float, float, float, float, float, float]:
     """
-    Lorentz-Drude model of the dielectric function of gold
+    [rakic, 2000] DL model of the dielectric function of gold at wavelength λ
+    consisting of a fundamental oscillator and 5 higher order oscillators
 
     Args:
         λ (float):wavelength (m)
 
-    Returns: n, k, ωp, τ
+    NB: all frequencies internally in eV
+
+    Returns: n, k, n(fundamental), k(fundamental), ωp, τ
 
     """
 
     # Convert input wavelength (m) to energy (eV)
-    ω_ev = wavalength_in_meters_to_energy_in_ev(λ)
+    ω_ev = wavelength_in_meters_to_energy_in_ev(λ)
 
     # Fundamental oscillator
-    ωp_ev: float = 9.03  # eV
+    ωp: float = 9.03
     f0: float = 0.760
-    Γ0_ev: float = 0.053  # eV
-    Ωp: float = np.sqrt(f0) * ωp_ev
-    ε = 1 - Ωp**2 / (ω_ev * (ω_ev + 1j * Γ0_ev))
+    Γ0: float = 0.053
+    Ωp: float = np.sqrt(f0) * ωp
+    ε_fundamental: complex = 1 - Ωp**2 / (ω_ev * (ω_ev + 1j * Γ0))
+    ε: complex = ε_fundamental
 
     # Higher order oscillators
     oscillators: list = [
@@ -60,22 +66,24 @@ def drude_lorentz(λ) -> tuple[float, float, float, float]:
     for oscillator in oscillators:
         ε += (
             oscillator.f
-            * ωp_ev**2
-            / ((oscillator.ω_ev**2 - ω_ev**2) - 1j * ω_ev * oscillator.Γ_ev)
+            * ωp**2
+            / ((oscillator.ω**2 - ω_ev**2) - 1j * ω_ev * oscillator.Γ)
         )
 
-    # Refractive index and extinction coefficient
+    # Refractive index and extinction coefficients
+    n_fundamental = np.sqrt(ε_fundamental).real
+    k_fundamental = np.sqrt(ε_fundamental).imag
     n = np.sqrt(ε).real
     k = np.sqrt(ε).imag
 
     # Plasma frequency and relaxation time
-    ωp = 2 * np.pi * energy_in_ev_to_frequency_in_hz(ωp_ev)
-    τ = 1 / (energy_in_ev_to_frequency_in_hz(Γ0_ev) * 2 * np.pi)
+    ωp_rads_per_s = 2 * np.pi * energy_in_ev_to_frequency_in_hz(ωp)
+    τ = 1 / (energy_in_ev_to_frequency_in_hz(Γ0) * 2 * np.pi)
 
-    return n, k, ωp, τ
+    return n, k, n_fundamental, k_fundamental, ωp_rads_per_s, τ
 
 
-def wavalength_in_meters_to_energy_in_ev(λ: float):
+def wavelength_in_meters_to_energy_in_ev(λ: float):
     """
 
     Calculate energy in eV from wavelength in meters
@@ -104,40 +112,57 @@ def energy_in_ev_to_frequency_in_hz(e: float):
     return e * syc.electron_volt / syc.h
 
 
-def rakic_gold_drude_lorentz_model():
+def rakic_au_drude_lorentz(λ_min: float, λ_max: float, n: int):
     """
-    Drude-Lorentz model of the dielectric function of gold.
+
+    Drude-Lorentz model of the dielectric function of gold over a range of wavelengths
+    using both only the fundamental oscillator and the full model (+5 higher order
+    oscillators), write data to Excel files and plot n,k vs wavelength.
+
+    Args:
+        λ_min (float): minimum wavelength in the range (m)
+        λ_max (float): maximum wavelength in the range (m)
+        n (int): number of samples
 
     Returns: None
 
     """
 
-    λ_max: float = 8e-6
-    λ_min: float = 3e-6
-    n: int = 1000
+    # Calculate n,k over the range of wavelengths
     λs: np.ndarray = np.linspace(λ_min, λ_max, n)
-    n, k, ωp, τ = np.vectorize(drude_lorentz)(λs)
+    n, k, n_fundamental, k_fundamental, ωp, τ = np.vectorize(rakic)(λs)
 
-    # plot n,k vs eV
-    plt.rc("font", family="Arial", size="14")
+    # Plot n,k vs wavelength
     plt.figure()
-    plt.plot(λs * 1e6, n, label="n")
-    plt.plot(λs * 1e6, k, label="k")
+    plt.plot(λs * 1e6, n, "g", label="n (full)")
+    plt.plot(λs * 1e6, n_fundamental, "g--", label="n (fundamental only)")
+    plt.plot(λs * 1e6, k, "b", label="k (full)")
+    plt.plot(λs * 1e6, k_fundamental, "b--", label="k (fundamental only)")
+    plt.title(
+        "[Rakic, 2000] Drude-Lorentz model for Au : "
+        "fundamental oscillator with 5 higher order oscillators"
+    )
     plt.xlabel("λ (μm)")
     plt.ylabel("n, k")
     plt.ylim(bottom=0)
-    plt.legend(bbox_to_anchor=(0, 1.02, 1, 0), loc=3, ncol=2, borderaxespad=0)
+    plt.legend()
     plt.grid()
     plt.show()
 
-    # Write data to Excel file
-    df1 = pd.DataFrame(
+    # Write data to Excel files ("Rakic-Au-DL.xlsx" and "Rakic-Au-DL-fundamental.xlsx")
+    df1: pd.DataFrame = pd.DataFrame(
         {
             "A": ["Element symbol", "Plasma frequency (rads/s)", "Relaxation time (s)"],
             "B": ["Au", ωp[0], τ[0]],
         }
     )
+    df2: pd.DataFrame = pd.DataFrame(
+        {"wavelength (um)": λs * 1e6, "n": n_fundamental, "k": k_fundamental}
+    )
+    with pd.ExcelWriter("data/Rakic-Au-DL-fundamental.xlsx") as writer:
+        df1.to_excel(writer, sheet_name="properties", index=False, header=False)
+        df2.to_excel(writer, sheet_name="n_and_k", index=False)
     df2 = pd.DataFrame({"wavelength (um)": λs * 1e6, "n": n, "k": k})
-    with pd.ExcelWriter("../data/Rakic-Au.xlsx") as writer:
+    with pd.ExcelWriter("data/Rakic-Au-DL.xlsx") as writer:
         df1.to_excel(writer, sheet_name="properties", index=False, header=False)
         df2.to_excel(writer, sheet_name="n_and_k", index=False)
