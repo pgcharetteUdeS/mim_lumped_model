@@ -112,7 +112,9 @@ def energy_in_ev_to_frequency_in_hz(e: float):
     return e * syc.electron_volt / syc.h
 
 
-def rakic_au_drude_lorentz(λ_min: float, λ_max: float, n: int):
+def rakic_au_drude_lorentz(
+    λ_min: float, λ_max: float, n: int, write_to_excel: bool = False
+):
     """
 
     Drude-Lorentz model of the dielectric function of gold over a range of wavelengths
@@ -123,6 +125,7 @@ def rakic_au_drude_lorentz(λ_min: float, λ_max: float, n: int):
         λ_min (float): minimum wavelength in the range (m)
         λ_max (float): maximum wavelength in the range (m)
         n (int): number of samples
+        write_to_excel: enable/disable writing the data to Excel output file
 
     Returns: None
 
@@ -150,19 +153,24 @@ def rakic_au_drude_lorentz(λ_min: float, λ_max: float, n: int):
     plt.show()
 
     # Write data to Excel files ("Rakic-Au-DL.xlsx" and "Rakic-Au-DL-fundamental.xlsx")
-    df1: pd.DataFrame = pd.DataFrame(
-        {
-            "A": ["Element symbol", "Plasma frequency (rads/s)", "Relaxation time (s)"],
-            "B": ["Au", ωp[0], τ[0]],
-        }
-    )
-    df2: pd.DataFrame = pd.DataFrame(
-        {"wavelength (um)": λs * 1e6, "n": n_fundamental, "k": k_fundamental}
-    )
-    with pd.ExcelWriter("data/Rakic-Au-DL-fundamental.xlsx") as writer:
-        df1.to_excel(writer, sheet_name="properties", index=False, header=False)
-        df2.to_excel(writer, sheet_name="n_and_k", index=False)
-    df2 = pd.DataFrame({"wavelength (um)": λs * 1e6, "n": n, "k": k})
-    with pd.ExcelWriter("data/Rakic-Au-DL.xlsx") as writer:
-        df1.to_excel(writer, sheet_name="properties", index=False, header=False)
-        df2.to_excel(writer, sheet_name="n_and_k", index=False)
+    if write_to_excel:
+        df1: pd.DataFrame = pd.DataFrame(
+            {
+                "A": [
+                    "Element symbol",
+                    "Plasma frequency (rads/s)",
+                    "Relaxation time (s)",
+                ],
+                "B": ["Au", ωp[0], τ[0]],
+            }
+        )
+        df2: pd.DataFrame = pd.DataFrame(
+            {"wavelength (um)": λs * 1e6, "n": n_fundamental, "k": k_fundamental}
+        )
+        with pd.ExcelWriter("data/Rakic-Au-DL-fundamental.xlsx") as writer:
+            df1.to_excel(writer, sheet_name="properties", index=False, header=False)
+            df2.to_excel(writer, sheet_name="n_and_k", index=False)
+        df2 = pd.DataFrame({"wavelength (um)": λs * 1e6, "n": n, "k": k})
+        with pd.ExcelWriter("data/Rakic-Au-DL.xlsx") as writer:
+            df1.to_excel(writer, sheet_name="properties", index=False, header=False)
+            df2.to_excel(writer, sheet_name="n_and_k", index=False)

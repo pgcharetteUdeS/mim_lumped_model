@@ -7,6 +7,11 @@
 
     Auteur: Paul Charette
 
+    NB:
+    1) Pour aller à des longueurs d'onde au delà de 8.25 um, il faudrait utiliser
+       l'interpolation en spline cubique (cubic spline) pour les indices
+       de l'oxyde car l'interpolation polynomial devient insuffisante.
+
     Remarques importantes dans la publie:
     1) "When designing an optimized MIM IR absorber with a high spectral selectivity,
         both FWHM and absorption must be considered simultaneously. Since fpeak
@@ -30,7 +35,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.11"
+__version__: str = "2.12"
 
 
 # Constants
@@ -273,6 +278,7 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
     ax2r.set_ylabel(r"Z$_{cross}$.imag ($\Omega$)", color="r")
     ax2r.tick_params(axis="y", labelcolor="r")
     ax2.grid()
+    plt.show()
 
     return None
 
@@ -352,6 +358,7 @@ def plot_absorbance_spectra(
     )
     plt.legend(loc="upper left")
     plt.grid()
+    plt.show()
 
 
 class FilterResponseMetrics(TypedDict):
@@ -574,6 +581,7 @@ def figure_3b(mats: Materials, geom: Geometry):
         ylabel="Λ (μm)",
     )
     fig.colorbar(im, label="FWHM (nm)")
+    plt.show()
 
     return None
 
@@ -597,17 +605,23 @@ def main():
     )
 
     # matplotlib non-blocking mode, working back-end
+    plt.rcParams.update(
+        {
+            "figure.dpi": 200,
+            "figure.figsize": [8, 5],
+            "font.size": 6,
+            "lines.linewidth": 0.5,
+            "axes.linewidth": 0.5,
+        },
+    )
     plt_use("TkAgg")
     plt.ion()
 
     # Start time
     start_time: float = time.time()
 
-    # Generate Drude-Lorentz model for the metal (can be commented out after first run)
-    rakic_au_drude_lorentz(λ_min=3e-6, λ_max=8e-6, n=100)
-
-    # Show figures
-    plt.show()
+    # Generate Drude-Lorentz model for au (can be commented out)
+    rakic_au_drude_lorentz(λ_min=3e-6, λ_max=9e-6, n=100)
 
     # Define the material properties for the metal and the insulator
     # insulator_datafile: str = "SiO2-1.729epsilon-5.5um.xlsx"
@@ -615,8 +629,8 @@ def main():
     metal_datafile: str = "Rakic-Au-DL.xlsx"
     mats: Materials = Materials(
         insulator_datafile=insulator_datafile,
-        insulator_εr_r_model_order=7,
-        insulator_εr_i_model_order=7,
+        insulator_εr_r_model_order=13,
+        insulator_εr_i_model_order=13,
         metal_datafile=metal_datafile,
         metal_n_model_order=3,
         metal_κ_model_order=3,
@@ -632,21 +646,22 @@ def main():
 
     # Plot figures from the paper
     figure_2d(mats=mats, geom=geom)
-    # figure_3a(mats=mats, geom=geom)
+    figure_3a(mats=mats, geom=geom)
     figure_3b(mats=mats, geom=geom)
 
     # Plot absorbance for "custom" cases
     insulator_datafile = "Kischkat-SiO2.xlsx"
+    metal_datafile = "Rakic-Au-DL.xlsx"
     mats = Materials(
         insulator_datafile=insulator_datafile,
-        insulator_εr_r_model_order=7,
-        insulator_εr_i_model_order=7,
+        insulator_εr_r_model_order=13,
+        insulator_εr_i_model_order=13,
         metal_datafile=metal_datafile,
         metal_n_model_order=3,
         metal_κ_model_order=3,
         absorbance_spectrum_sample_count=1500,
     )
-    geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=50e-9, t_ins=200e-9, c=0.4)
+    geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=50e-9, t_ins=200e-9, c=0.5)
     geometries: np.ndarray = np.asarray(
         [
             [100, 1.3, 3.6],
