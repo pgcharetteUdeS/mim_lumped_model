@@ -625,7 +625,7 @@ def main():
     )
 
     # Define the reference structure geometry
-    geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=100e-9, t_ins=200e-9, c=0.4)
+    geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=100e-9, t_ins=200e-9, c=0.5)
 
     # Plot the complex impedance for the reference structure geometry (Zcross)
     plot_z_cross_spectrum(mats=mats, geom=geom)
