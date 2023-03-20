@@ -607,7 +607,7 @@ def main():
     # matplotlib non-blocking mode, working back-end
     plt.rcParams.update(
         {
-            "figure.dpi": 200,
+            "figure.dpi": 160,
             "figure.figsize": [8, 5],
             "font.size": 6,
             "lines.linewidth": 0.5,
