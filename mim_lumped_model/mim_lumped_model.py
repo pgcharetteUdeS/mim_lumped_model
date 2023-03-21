@@ -27,20 +27,33 @@ from itertools import product
 from matplotlib import use as plt_use
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import scipy.constants as syc
 from typing import TypedDict
 
-from rakic_au_drude_lorentz import rakic_au_drude_lorentz
+from rakic import rakic_au_model
 from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "2.12"
+__version__: str = "3.0"
 
 
 # Constants
 Constants = namedtuple("Constants", "z0")
 constants = Constants(np.sqrt(syc.mu_0 / syc.epsilon_0))
+
+
+class FilterResponseMetrics(TypedDict):
+    """
+    Typed dictionary data type for filter_response_metrics() return values
+    """
+
+    λ_peak: float
+    fwhm: float
+    q: float
+    λs: np.ndarray
+    absorbance: np.ndarray
 
 
 def c_p(geom: Geometry) -> float:
@@ -307,7 +320,7 @@ def absorbance(λ: float, mats: Materials, geom: Geometry) -> float:
 
 def plot_absorbance_spectra(
     mats: Materials, geom: Geometry, geometries: np.ndarray, title: str
-):
+) -> list:
     """
     Combined absorbance spectrum plots for MIMs of different geometries
 
@@ -317,7 +330,7 @@ def plot_absorbance_spectra(
         geometries (np.ndarray): MIMs geometries as array of [a, b, Λ] value triplets
         title (str): plot title
 
-    Returns: None
+    Returns: list of dictionaries of absorbers
 
     """
 
@@ -334,6 +347,7 @@ def plot_absorbance_spectra(
             b=absorber["b"],
             Λ=absorber["Λ"],
         )
+        absorber["metrics"] = response_metrics
         ax.plot(
             mats.λs * 1e6,
             response_metrics["absorbance"],
@@ -360,16 +374,7 @@ def plot_absorbance_spectra(
     plt.grid()
     plt.show()
 
-
-class FilterResponseMetrics(TypedDict):
-    """
-    Typed dictionary data type for filter_response_metrics() return values
-    """
-
-    λ_peak: float
-    fwhm: float
-    q: float
-    absorbance: np.ndarray
+    return absorbers
 
 
 def filter_response_metrics(
@@ -425,10 +430,16 @@ def filter_response_metrics(
     q: float = λ_peak / fwhm
 
     # Return filter metrics and absorbance spectrum
-    return {"λ_peak": λ_peak, "fwhm": fwhm, "q": q, "absorbance": absorbance_spectrum}
+    return {
+        "λ_peak": λ_peak,
+        "fwhm": fwhm,
+        "q": q,
+        "absorbance": absorbance_spectrum,
+        "λs": mats.λs,
+    }
 
 
-def figure_2d(mats: Materials, geom: Geometry):
+def figure_2d(mats: Materials, geom: Geometry) -> list:
     """
     Plot Figure 2d from the paper
 
@@ -436,7 +447,7 @@ def figure_2d(mats: Materials, geom: Geometry):
         mats (Materials): material properties
         geom (Geometry): reference structure geometry
 
-    Returns: None
+    Returns: list of dictionaries of absorbers
 
     """
 
@@ -449,14 +460,14 @@ def figure_2d(mats: Materials, geom: Geometry):
             [350, 2.1, 4.2],
         ]
     ) * [1e-9, 1e-6, 1e-6]
-    plot_absorbance_spectra(
+    absorbers: list = plot_absorbance_spectra(
         mats=mats, geom=geom, geometries=geometries, title="Figure 2d : Absorbance (λ)"
     )
 
-    return None
+    return absorbers
 
 
-def figure_3a(mats: Materials, geom: Geometry):
+def figure_3a(mats: Materials, geom: Geometry) -> list:
     """
     Plot Figure 3a from the paper
 
@@ -485,14 +496,14 @@ def figure_3a(mats: Materials, geom: Geometry):
             [300, 2.4, 4.0],
         ]
     ) * [1e-9, 1e-6, 1e-6]
-    plot_absorbance_spectra(
+    absorbers: list = plot_absorbance_spectra(
         mats=mats,
         geom=geom,
         geometries=geometries,
         title="Figure 3a : Absorbance(λ) for the 12 MIM IR absorbers",
     )
 
-    return None
+    return absorbers
 
 
 def figure_3b(mats: Materials, geom: Geometry):
@@ -586,6 +597,94 @@ def figure_3b(mats: Materials, geom: Geometry):
     return None
 
 
+def save_results_to_file(
+    filename: str, absorbers: list, mats: Materials, geom: Geometry
+):
+    """
+    Save geometry, materials and results from a modeling run to an Excel file
+
+    Args:
+        filename (str): output filename
+        absorbers (list): list of absorbers
+        mats (Materials): material properties
+        geom (Geometry): reference structure geometry
+
+    Returns: None
+
+    """
+
+    # Write geometry information to Excel file
+    df: pd.DataFrame = pd.DataFrame(
+        {
+            "A": [
+                "a (m)",
+                "b (m)",
+                "c",
+                "Λ (m)",
+                "t_metal (m)",
+                "t_ins (m)",
+            ],
+            "B": [geom.a, geom.b, geom.c, geom.Λ, geom.t_metal, geom.t_ins],
+        }
+    )
+    with pd.ExcelWriter(f"output/{filename}") as writer:
+        df.to_excel(writer, sheet_name="Geometry", index=False, header=False)
+
+    # Write materials information to Excel file
+    df = pd.DataFrame(
+        {
+            "A": [
+                "insulator_datafile",
+                "insulator_εr_r_model_order",
+                "insulator_εr_i_model_order",
+                "metal_datafile",
+                "metal_n_model_order",
+                "metal_κ_model_order",
+                "absorbance_spectrum_sample_count",
+            ],
+            "B": [
+                mats.insulator_datafile,
+                mats.insulator_εr_r_model_order,
+                mats.insulator_εr_i_model_order,
+                mats.metal_datafile,
+                mats.metal_n_model_order,
+                mats.metal_κ_model_order,
+                mats.absorbance_spectrum_sample_count,
+            ],
+        }
+    )
+    with pd.ExcelWriter(f"output/{filename}", mode="a") as writer:
+        df.to_excel(writer, sheet_name="Materials", index=False, header=False)
+
+    # Loop to write results to Excel file
+    for i, absorber in enumerate(absorbers):
+        df1: pd.DataFrame = pd.DataFrame(
+            {
+                "A": [
+                    "λ_peak (m)",
+                    "fwhm (m)",
+                    "Q",
+                ],
+                "B": [
+                    absorber["metrics"]["λ_peak"],
+                    absorber["metrics"]["fwhm"],
+                    absorber["metrics"]["q"],
+                ],
+            }
+        )
+        df2: pd.DataFrame = pd.DataFrame(
+            {
+                "wavelength (m)": absorber["metrics"]["λs"],
+                "absorbance": absorber["metrics"]["absorbance"],
+            }
+        )
+        with pd.ExcelWriter(f"output/{filename}", mode="a") as writer:
+            df1.to_excel(
+                writer, sheet_name=f"osc {i} - properties", index=False, header=False
+            )
+            df2.to_excel(writer, sheet_name=f"osc {i} - absorbance", index=False)
+
+
 def main():
     """
     Main calling function
@@ -620,13 +719,18 @@ def main():
     # Start time
     start_time: float = time.time()
 
-    # Generate Drude-Lorentz model for au (can be commented out)
-    rakic_au_drude_lorentz(λ_min=3e-6, λ_max=9e-6, n=100)
+    # Select the [Rakic, 1998] model for the metal (Drude-Lorentz or Brendel)
+    # model: str = "Drude-Lorentz"
+    model: str = "Brendel"
+    if model == "Drude-Lorentz":
+        rakic_au_model(model="Drude-Lorentz", λ_min=3e-6, λ_max=9e-6, n=100)
+        metal_datafile = "Rakic-Au-Drude-Lorentz.xlsx"
+    else:
+        rakic_au_model(model="Brendel", λ_min=3e-6, λ_max=9e-6, n=100)
+        metal_datafile = "Rakic-Au-Brendel.xlsx"
 
     # Define the material properties for the metal and the insulator
-    # insulator_datafile: str = "SiO2-1.729epsilon-5.5um.xlsx"
     insulator_datafile = "Kischkat-SiO2.xlsx"
-    metal_datafile: str = "Rakic-Au-DL.xlsx"
     mats: Materials = Materials(
         insulator_datafile=insulator_datafile,
         insulator_εr_r_model_order=13,
@@ -645,22 +749,17 @@ def main():
     plot_z_cross_spectrum(mats=mats, geom=geom)
 
     # Plot figures from the paper
-    figure_2d(mats=mats, geom=geom)
-    figure_3a(mats=mats, geom=geom)
+    fig_2d_absorbers: list = figure_2d(mats=mats, geom=geom)
+    save_results_to_file(
+        filename="figure_2d.xlsx", absorbers=fig_2d_absorbers, mats=mats, geom=geom
+    )
+    fig_3a_absorbers: list = figure_3a(mats=mats, geom=geom)
+    save_results_to_file(
+        filename="figure_3a.xlsx", absorbers=fig_3a_absorbers, mats=mats, geom=geom
+    )
     figure_3b(mats=mats, geom=geom)
 
     # Plot absorbance for "custom" cases
-    insulator_datafile = "Kischkat-SiO2.xlsx"
-    metal_datafile = "Rakic-Au-DL.xlsx"
-    mats = Materials(
-        insulator_datafile=insulator_datafile,
-        insulator_εr_r_model_order=13,
-        insulator_εr_i_model_order=13,
-        metal_datafile=metal_datafile,
-        metal_n_model_order=3,
-        metal_κ_model_order=3,
-        absorbance_spectrum_sample_count=1500,
-    )
     geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=50e-9, t_ins=200e-9, c=0.5)
     geometries: np.ndarray = np.asarray(
         [
@@ -672,11 +771,17 @@ def main():
             [300, 2.3, 4.0],
         ]
     ) * [1e-9, 1e-6, 1e-6]
-    plot_absorbance_spectra(
+    custom_absorbers: list = plot_absorbance_spectra(
         mats=mats,
         geom=geom,
         geometries=geometries,
         title="Absorbance (λ) - custom case",
+    )
+    save_results_to_file(
+        filename="custom_absorbers.xlsx",
+        absorbers=custom_absorbers,
+        mats=mats,
+        geom=geom,
     )
 
     # Show running time on console
