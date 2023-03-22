@@ -620,6 +620,16 @@ def save_results_to_file(
 
     """
 
+    # Check if the Excel output file is already open
+    try:
+        with open(f"output/{filename}", "a"):
+            pass
+    except IOError:
+        raise IOError(
+            f"Could not open 'output/{filename}', close it " "if it's already open!"
+        ) from None
+
+    # Write geometry, materials and results to Excel file
     with pd.ExcelWriter(f"output/{filename}") as writer:
         # Write geometry
         df: pd.DataFrame = pd.DataFrame(
@@ -726,7 +736,7 @@ def main():
 
     # Select the [Rakic, 1998] model for the metal (Drude-Lorentz or Brendel)
     model: str = "Drude-Lorentz"
-    #model: str = "Brendel"
+    # model: str = "Brendel"
     if model == "Drude-Lorentz":
         rakic_au_model(model="Drude-Lorentz", λ_min=3e-6, λ_max=9e-6, n=100)
         metal_datafile = "Rakic-Au-Drude-Lorentz.xlsx"
