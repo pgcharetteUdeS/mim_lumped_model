@@ -186,6 +186,5 @@ fabric.properties
 .idea/mypy.xml
 
 # Other directeors
-output/
-references/
-
+output/*.png
+output/*.xlsx

@@ -1,0 +1,1 @@
+Placeholder to ensure output directory is created with project pull

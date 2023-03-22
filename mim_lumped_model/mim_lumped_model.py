@@ -613,76 +613,74 @@ def save_results_to_file(
 
     """
 
-    # Write geometry information to Excel file
-    df: pd.DataFrame = pd.DataFrame(
-        {
-            "A": [
-                "a (m)",
-                "b (m)",
-                "c",
-                "Λ (m)",
-                "t_metal (m)",
-                "t_ins (m)",
-            ],
-            "B": [geom.a, geom.b, geom.c, geom.Λ, geom.t_metal, geom.t_ins],
-        }
-    )
     with pd.ExcelWriter(f"output/{filename}") as writer:
-        df.to_excel(writer, sheet_name="Geometry", index=False, header=False)
-
-    # Write materials information to Excel file
-    df = pd.DataFrame(
-        {
-            "A": [
-                "insulator_datafile",
-                "insulator_εr_r_model_order",
-                "insulator_εr_i_model_order",
-                "metal_datafile",
-                "metal_n_model_order",
-                "metal_κ_model_order",
-                "absorbance_spectrum_sample_count",
-            ],
-            "B": [
-                mats.insulator_datafile,
-                mats.insulator_εr_r_model_order,
-                mats.insulator_εr_i_model_order,
-                mats.metal_datafile,
-                mats.metal_n_model_order,
-                mats.metal_κ_model_order,
-                mats.absorbance_spectrum_sample_count,
-            ],
-        }
-    )
-    with pd.ExcelWriter(f"output/{filename}", mode="a") as writer:
-        df.to_excel(writer, sheet_name="Materials", index=False, header=False)
-
-    # Loop to write results to Excel file
-    for i, absorber in enumerate(absorbers):
-        df1: pd.DataFrame = pd.DataFrame(
+        # Write geometry
+        df: pd.DataFrame = pd.DataFrame(
             {
                 "A": [
-                    "λ_peak (m)",
-                    "fwhm (m)",
-                    "Q",
+                    "a (m)",
+                    "b (m)",
+                    "c",
+                    "Λ (m)",
+                    "t_metal (m)",
+                    "t_ins (m)",
+                ],
+                "B": [geom.a, geom.b, geom.c, geom.Λ, geom.t_metal, geom.t_ins],
+            }
+        )
+        df.to_excel(writer, sheet_name="Geometry", index=False, header=False)
+
+        # Write materials
+        df = pd.DataFrame(
+            {
+                "A": [
+                    "insulator_datafile",
+                    "insulator_εr_r_model_order",
+                    "insulator_εr_i_model_order",
+                    "metal_datafile",
+                    "metal_n_model_order",
+                    "metal_κ_model_order",
+                    "absorbance_spectrum_sample_count",
                 ],
                 "B": [
-                    absorber["metrics"]["λ_peak"],
-                    absorber["metrics"]["fwhm"],
-                    absorber["metrics"]["q"],
+                    mats.insulator_datafile,
+                    mats.insulator_εr_r_model_order,
+                    mats.insulator_εr_i_model_order,
+                    mats.metal_datafile,
+                    mats.metal_n_model_order,
+                    mats.metal_κ_model_order,
+                    mats.absorbance_spectrum_sample_count,
                 ],
             }
         )
-        df2: pd.DataFrame = pd.DataFrame(
-            {
-                "wavelength (m)": absorber["metrics"]["λs"],
-                "absorbance": absorber["metrics"]["absorbance"],
-            }
-        )
-        with pd.ExcelWriter(f"output/{filename}", mode="a") as writer:
-            df1.to_excel(
+        df.to_excel(writer, sheet_name="Materials", index=False, header=False)
+
+        # Loop to write results for each absorber
+        for i, absorber in enumerate(absorbers):
+            df = pd.DataFrame(
+                {
+                    "A": [
+                        "λ_peak (m)",
+                        "fwhm (m)",
+                        "Q",
+                    ],
+                    "B": [
+                        absorber["metrics"]["λ_peak"],
+                        absorber["metrics"]["fwhm"],
+                        absorber["metrics"]["q"],
+                    ],
+                }
+            )
+            df.to_excel(
                 writer, sheet_name=f"osc {i} - properties", index=False, header=False
             )
-            df2.to_excel(writer, sheet_name=f"osc {i} - absorbance", index=False)
+            df = pd.DataFrame(
+                {
+                    "wavelength (m)": absorber["metrics"]["λs"],
+                    "absorbance": absorber["metrics"]["absorbance"],
+                }
+            )
+            df.to_excel(writer, sheet_name=f"osc {i} - absorbance", index=False)
 
 
 def main():
