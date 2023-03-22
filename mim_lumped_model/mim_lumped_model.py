@@ -36,7 +36,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "3.0"
+__version__: str = "3.1"
 
 
 # Constants
@@ -319,7 +319,7 @@ def absorbance(λ: float, mats: Materials, geom: Geometry) -> float:
 
 
 def plot_absorbance_spectra(
-    mats: Materials, geom: Geometry, geometries: np.ndarray, title: str
+    mats: Materials, geom: Geometry, geometries: np.ndarray, title: str, filename: str
 ) -> list:
     """
     Combined absorbance spectrum plots for MIMs of different geometries
@@ -329,6 +329,7 @@ def plot_absorbance_spectra(
         geom (Geometry): reference structure geometry
         geometries (np.ndarray): MIMs geometries as array of [a, b, Λ] value triplets
         title (str): plot title
+        filename (str): filename for saving the plot
 
     Returns: list of dictionaries of absorbers
 
@@ -372,6 +373,7 @@ def plot_absorbance_spectra(
     )
     plt.legend(loc="upper left")
     plt.grid()
+    plt.savefig(f"output/{filename}")
     plt.show()
 
     return absorbers
@@ -461,7 +463,11 @@ def figure_2d(mats: Materials, geom: Geometry) -> list:
         ]
     ) * [1e-9, 1e-6, 1e-6]
     absorbers: list = plot_absorbance_spectra(
-        mats=mats, geom=geom, geometries=geometries, title="Figure 2d : Absorbance (λ)"
+        mats=mats,
+        geom=geom,
+        geometries=geometries,
+        title="Figure 2d : Absorbance (λ)",
+        filename="figure_2d.png",
     )
 
     return absorbers
@@ -501,6 +507,7 @@ def figure_3a(mats: Materials, geom: Geometry) -> list:
         geom=geom,
         geometries=geometries,
         title="Figure 3a : Absorbance(λ) for the 12 MIM IR absorbers",
+        filename="figure_3a.png",
     )
 
     return absorbers
@@ -704,7 +711,7 @@ def main():
     # matplotlib non-blocking mode, working back-end
     plt.rcParams.update(
         {
-            "figure.dpi": 160,
+            "figure.dpi": 200,
             "figure.figsize": [8, 5],
             "font.size": 6,
             "lines.linewidth": 0.5,
@@ -718,8 +725,8 @@ def main():
     start_time: float = time.time()
 
     # Select the [Rakic, 1998] model for the metal (Drude-Lorentz or Brendel)
-    # model: str = "Drude-Lorentz"
-    model: str = "Brendel"
+    model: str = "Drude-Lorentz"
+    #model: str = "Brendel"
     if model == "Drude-Lorentz":
         rakic_au_model(model="Drude-Lorentz", λ_min=3e-6, λ_max=9e-6, n=100)
         metal_datafile = "Rakic-Au-Drude-Lorentz.xlsx"
@@ -774,6 +781,7 @@ def main():
         geom=geom,
         geometries=geometries,
         title="Absorbance (λ) - custom case",
+        filename="custom_absorbers.png",
     )
     save_results_to_file(
         filename="custom_absorbers.xlsx",
