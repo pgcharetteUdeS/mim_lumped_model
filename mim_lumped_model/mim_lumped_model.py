@@ -24,7 +24,6 @@ import sys
 import time
 from collections import namedtuple
 from itertools import product
-from matplotlib import use as plt_use
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -36,7 +35,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "3.1"
+__version__: str = "3.2"
 
 
 # Constants
@@ -377,6 +376,105 @@ def plot_absorbance_spectra(
     return absorbers
 
 
+def save_results_to_excel_file(
+    filename: str, absorbers: list, mats: Materials, geom: Geometry
+):
+    """
+    Save geometry, materials and modeling results to an Excel file
+
+    Args:
+        filename (str): output filename
+        absorbers (list): list of absorbers
+        mats (Materials): material properties
+        geom (Geometry): reference structure geometry
+
+    Returns: None
+
+    """
+
+    # Check if the Excel output file is already open, else flag the error and exit
+    try:
+        with open(f"output/{filename}", "a"):
+            pass
+    except IOError:
+        raise IOError(
+            f"Could not open 'output/{filename}', close it " "if it's already open!"
+        ) from None
+
+    # Write to Excel file
+    with pd.ExcelWriter(f"output/{filename}") as writer:
+        # Write geometry info
+        df: pd.DataFrame = pd.DataFrame(
+            {
+                "A": [
+                    "a (m)",
+                    "b (m)",
+                    "c",
+                    "Λ (m)",
+                    "t_metal (m)",
+                    "t_ins (m)",
+                ],
+                "B": [geom.a, geom.b, geom.c, geom.Λ, geom.t_metal, geom.t_ins],
+            }
+        )
+        df.to_excel(writer, sheet_name="Geometry", index=False, header=False)
+
+        # Write materials info
+        df = pd.DataFrame(
+            {
+                "A": [
+                    "insulator_datafile",
+                    "insulator_εr_r_model_order",
+                    "insulator_εr_i_model_order",
+                    "metal_datafile",
+                    "metal_n_model_order",
+                    "metal_κ_model_order",
+                    "absorbance_spectrum_sample_count",
+                ],
+                "B": [
+                    mats.insulator_datafile,
+                    mats.insulator_εr_r_model_order,
+                    mats.insulator_εr_i_model_order,
+                    mats.metal_datafile,
+                    mats.metal_n_model_order,
+                    mats.metal_κ_model_order,
+                    mats.absorbance_spectrum_sample_count,
+                ],
+            }
+        )
+        df.to_excel(writer, sheet_name="Materials", index=False, header=False)
+
+        # Loop to write modeling results for each absorber to separate sheets
+        for i, absorber in enumerate(absorbers):
+            df = pd.DataFrame(
+                {
+                    "A": [
+                        "λ_peak (m)",
+                        "fwhm (m)",
+                        "Q",
+                    ],
+                    "B": [
+                        absorber["metrics"]["λ_peak"],
+                        absorber["metrics"]["fwhm"],
+                        absorber["metrics"]["q"],
+                    ],
+                }
+            )
+            df.to_excel(
+                writer,
+                sheet_name=f"absorber {i} - properties",
+                index=False,
+                header=False,
+            )
+            df = pd.DataFrame(
+                {
+                    "wavelength (m)": absorber["metrics"]["λs"],
+                    "absorbance": absorber["metrics"]["absorbance"],
+                }
+            )
+            df.to_excel(writer, sheet_name=f"absorber {i} - absorbance", index=False)
+
+
 def filter_response_metrics(
     mats: Materials,
     geom: Geometry,
@@ -601,102 +699,6 @@ def figure_3b(mats: Materials, geom: Geometry):
     return None
 
 
-def save_results_to_file(
-    filename: str, absorbers: list, mats: Materials, geom: Geometry
-):
-    """
-    Save geometry, materials and results from a modeling run to an Excel file
-
-    Args:
-        filename (str): output filename
-        absorbers (list): list of absorbers
-        mats (Materials): material properties
-        geom (Geometry): reference structure geometry
-
-    Returns: None
-
-    """
-
-    # Check if the Excel output file is already open
-    try:
-        with open(f"output/{filename}", "a"):
-            pass
-    except IOError:
-        raise IOError(
-            f"Could not open 'output/{filename}', close it " "if it's already open!"
-        ) from None
-
-    # Write geometry, materials and results to Excel file
-    with pd.ExcelWriter(f"output/{filename}") as writer:
-        # Write geometry
-        df: pd.DataFrame = pd.DataFrame(
-            {
-                "A": [
-                    "a (m)",
-                    "b (m)",
-                    "c",
-                    "Λ (m)",
-                    "t_metal (m)",
-                    "t_ins (m)",
-                ],
-                "B": [geom.a, geom.b, geom.c, geom.Λ, geom.t_metal, geom.t_ins],
-            }
-        )
-        df.to_excel(writer, sheet_name="Geometry", index=False, header=False)
-
-        # Write materials
-        df = pd.DataFrame(
-            {
-                "A": [
-                    "insulator_datafile",
-                    "insulator_εr_r_model_order",
-                    "insulator_εr_i_model_order",
-                    "metal_datafile",
-                    "metal_n_model_order",
-                    "metal_κ_model_order",
-                    "absorbance_spectrum_sample_count",
-                ],
-                "B": [
-                    mats.insulator_datafile,
-                    mats.insulator_εr_r_model_order,
-                    mats.insulator_εr_i_model_order,
-                    mats.metal_datafile,
-                    mats.metal_n_model_order,
-                    mats.metal_κ_model_order,
-                    mats.absorbance_spectrum_sample_count,
-                ],
-            }
-        )
-        df.to_excel(writer, sheet_name="Materials", index=False, header=False)
-
-        # Loop to write results for each absorber
-        for i, absorber in enumerate(absorbers):
-            df = pd.DataFrame(
-                {
-                    "A": [
-                        "λ_peak (m)",
-                        "fwhm (m)",
-                        "Q",
-                    ],
-                    "B": [
-                        absorber["metrics"]["λ_peak"],
-                        absorber["metrics"]["fwhm"],
-                        absorber["metrics"]["q"],
-                    ],
-                }
-            )
-            df.to_excel(
-                writer, sheet_name=f"osc {i} - properties", index=False, header=False
-            )
-            df = pd.DataFrame(
-                {
-                    "wavelength (m)": absorber["metrics"]["λs"],
-                    "absorbance": absorber["metrics"]["absorbance"],
-                }
-            )
-            df.to_excel(writer, sheet_name=f"osc {i} - absorbance", index=False)
-
-
 def main():
     """
     Main calling function
@@ -715,7 +717,7 @@ def main():
         f"{os.path.basename(__file__)} {__version__} (running Python {python_version})"
     )
 
-    # matplotlib non-blocking mode, working back-end
+    # matplotlib parameters and non-blocking mode
     plt.rcParams.update(
         {
             "figure.dpi": 200,
@@ -730,7 +732,7 @@ def main():
     # Start time
     start_time: float = time.time()
 
-    # Select the [Rakic, 1998] model for the metal (Drude-Lorentz or Brendel)
+    # Select the [Rakic, 1998] model for the metal ("Drude-Lorentz" or "Brendel")
     model: str = "Drude-Lorentz"
     # model: str = "Brendel"
     if model == "Drude-Lorentz":
@@ -761,11 +763,11 @@ def main():
 
     # Plot figures from the paper
     fig_2d_absorbers: list = figure_2d(mats=mats, geom=geom)
-    save_results_to_file(
+    save_results_to_excel_file(
         filename="figure_2d.xlsx", absorbers=fig_2d_absorbers, mats=mats, geom=geom
     )
     fig_3a_absorbers: list = figure_3a(mats=mats, geom=geom)
-    save_results_to_file(
+    save_results_to_excel_file(
         filename="figure_3a.xlsx", absorbers=fig_3a_absorbers, mats=mats, geom=geom
     )
     figure_3b(mats=mats, geom=geom)
@@ -789,7 +791,7 @@ def main():
         title="Absorbance (λ) - custom case",
         filename="custom_absorbers.png",
     )
-    save_results_to_file(
+    save_results_to_excel_file(
         filename="custom_absorbers.xlsx",
         absorbers=custom_absorbers,
         mats=mats,
