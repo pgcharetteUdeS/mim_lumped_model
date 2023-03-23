@@ -35,7 +35,7 @@ from materials_and_geometry import Geometry, Materials
 
 
 # Script version
-__version__: str = "3.2"
+__version__: str = "3.3"
 
 
 # Constants
@@ -334,7 +334,7 @@ def plot_absorbance_spectra(
     """
 
     # Convert geometry "array of arrays" to "list of dictionaries", for code clarity
-    absorbers: list = [dict(zip(["a", "b", "Λ"], g)) for g in geometries]
+    absorbers: list = [dict(zip(["a", "b", "c", "Λ"], g)) for g in geometries]
 
     # Loop to plot the absorbance for the different geometries
     fig, ax = plt.subplots()
@@ -344,6 +344,7 @@ def plot_absorbance_spectra(
             geom=geom,
             a=absorber["a"],
             b=absorber["b"],
+            c=absorber["c"],
             Λ=absorber["Λ"],
         )
         absorber["metrics"] = response_metrics
@@ -355,14 +356,14 @@ def plot_absorbance_spectra(
             f"Q={response_metrics['q']:.1e}\n"
             f"a={absorber['a']*1e9:.0f} nm, "
             f"b={absorber['b']*1e6:.1f} μm, "
+            f"c={absorber['c']:.2f}, "
             f"Λ={absorber['Λ']*1e6:.1f} μm",
         )
     ax.set(
         title=f"{title}\n"
         f"{mats.metal_name} ({mats.metal_datafile}) : "
         rf"ω$_p$ = 2$\pi$ {mats.ω_p/(2*np.pi):.2e} Hz, τ = {mats.τ:.2e} s, "
-        rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm, "
-        f"c = {geom.c: .2f}\n"
+        rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm\n"
         f"{mats.insulator_name} ({mats.insulator_datafile}) : "
         rf"t$_{{ins}}$ = {geom.t_ins * 1e9:.1f} nm",
         xlabel="Wavelength (μm)",
@@ -480,17 +481,20 @@ def filter_response_metrics(
     geom: Geometry,
     a: float,
     b: float,
+    c: float,
     Λ: float,
 ) -> FilterResponseMetrics:
     """
     Filter response metrics λpeak, FWHM, Q, and absorbance spectrum as a function
-    of structure geometry parameters a, b, and Λ
+    of structure geometry parameters a, b, c, and Λ
 
     Args:
         mats (Materials): material properties
         geom (Geometry): reference structure geometry
         a (float): cross arm width (m)
         b (float): cross arm length (m)
+        c (float) : constant chosen to take the fringe effect of the capacitance and
+                    nonuniform electric field distribution into consideration.
         Λ (float): cross pattern period (m)
 
     Returns: λ_peak (m), FWHM (m), Q, absorbance spectrum
@@ -500,6 +504,7 @@ def filter_response_metrics(
     # Load geometry parameters into the reference geometry object
     geom.a = a
     geom.b = b
+    geom.c = c
     geom.Λ = Λ
 
     # Absorbance as a function of wavelength (absorbance spectrum)
@@ -552,12 +557,12 @@ def figure_2d(mats: Materials, geom: Geometry) -> list:
     # MIM geometries: triplets of a(m), b (m), Λ(m)
     geometries: np.ndarray = np.asarray(
         [
-            [150, 1.5, 3.6],
-            [200, 1.7, 3.8],
-            [300, 1.9, 4.0],
-            [350, 2.1, 4.2],
+            [150, 1.5, geom.c, 3.6],
+            [200, 1.7, geom.c, 3.8],
+            [300, 1.9, geom.c, 4.0],
+            [350, 2.1, geom.c, 4.2],
         ]
-    ) * [1e-9, 1e-6, 1e-6]
+    ) * [1e-9, 1e-6, 1, 1e-6]
     absorbers: list = plot_absorbance_spectra(
         mats=mats,
         geom=geom,
@@ -584,20 +589,21 @@ def figure_3a(mats: Materials, geom: Geometry) -> list:
     # MIM geometries: triplets of a(m), b (m), Λ(m)
     geometries: np.ndarray = np.asarray(
         [
-            [150, 1.3, 3.0],
-            [150, 1.4, 3.2],
-            [200, 1.5, 3.4],
-            [200, 1.6, 3.6],
-            [200, 1.7, 3.6],
-            [200, 1.8, 3.8],
-            [200, 1.9, 4.0],
-            [300, 2.0, 4.0],
-            [300, 2.1, 4.0],
-            [300, 2.2, 4.0],
-            [300, 2.3, 4.0],
-            [300, 2.4, 4.0],
+            [150, 1.3, geom.c, 3.0],
+            [150, 1.4, geom.c, 3.2],
+            [200, 1.5, geom.c, 3.4],
+            [200, 1.6, geom.c, 3.6],
+            [200, 1.7, geom.c, 3.6],
+            [200, 1.8, geom.c, 3.8],
+            [200, 1.9, geom.c, 4.0],
+            [300, 2.0, geom.c, 4.0],
+            [300, 2.1, geom.c, 4.0],
+            [300, 2.2, geom.c, 4.0],
+            [300, 2.3, geom.c, 4.0],
+            [300, 2.4, geom.c, 4.0],
         ]
-    ) * [1e-9, 1e-6, 1e-6]
+    ) * [1e-9, 1e-6, 1, 1e-6]
+    geometries[:, 2] = np.linspace(0.46, 0.5, len(geometries))
     absorbers: list = plot_absorbance_spectra(
         mats=mats,
         geom=geom,
@@ -638,6 +644,7 @@ def figure_3b(mats: Materials, geom: Geometry):
                 geom=geom,
                 a=a_fixed,
                 b=b,
+                c=geom.c,
                 Λ=Λ_fixed,
             )["λ_peak"]
             for b in b_array
@@ -661,6 +668,7 @@ def figure_3b(mats: Materials, geom: Geometry):
         geom=geom,
         a=a_fixed,
         b=b_fixed,
+        c=geom.c,
         Λ=Λ_fixed,
     )
     λ_peak_fixed = filter_metrics["λ_peak"]
@@ -671,6 +679,7 @@ def figure_3b(mats: Materials, geom: Geometry):
                 geom=geom,
                 a=a,
                 b=b_fixed,
+                c=geom.c,
                 Λ=Λ,
             )["fwhm"]
             for Λ, a in product(Λ_array, a_array)
@@ -776,14 +785,14 @@ def main():
     geom = Geometry(a=150e-9, b=1.5e-6, Λ=3.6e-6, t_metal=50e-9, t_ins=200e-9, c=0.5)
     geometries: np.ndarray = np.asarray(
         [
-            [100, 1.3, 3.6],
-            [150, 1.5, 3.6],
-            [200, 1.7, 3.8],
-            [200, 1.9, 3.8],
-            [250, 2.1, 4.0],
-            [300, 2.3, 4.0],
+            [100, 1.3, geom.c, 3.6],
+            [150, 1.5, geom.c, 3.6],
+            [200, 1.7, geom.c, 3.8],
+            [200, 1.9, geom.c, 3.8],
+            [250, 2.1, geom.c, 4.0],
+            [300, 2.3, geom.c, 4.0],
         ]
-    ) * [1e-9, 1e-6, 1e-6]
+    ) * [1e-9, 1e-6, 1, 1e-6]
     custom_absorbers: list = plot_absorbance_spectra(
         mats=mats,
         geom=geom,
