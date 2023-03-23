@@ -222,7 +222,6 @@ class Materials:
             ax1.grid()
             ax1.legend()
             plt.tight_layout()
-            plt.show()
 
         return n_poly, κ_poly, λs, metal_name, ω_p, τ, σ
 
@@ -299,6 +298,5 @@ class Materials:
             ax1.legend()
             ax1.grid()
             plt.tight_layout()
-            plt.show()
 
         return εr_r_poly, εr_i_poly, λs, insulator_name

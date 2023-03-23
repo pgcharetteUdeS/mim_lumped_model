@@ -291,7 +291,6 @@ def plot_z_cross_spectrum(mats: Materials, geom: Geometry):
     ax2r.set_ylabel(r"Z$_{cross}$.imag ($\Omega$)", color="r")
     ax2r.tick_params(axis="y", labelcolor="r")
     ax2.grid()
-    plt.show()
 
     return None
 
@@ -374,7 +373,6 @@ def plot_absorbance_spectra(
     plt.legend(loc="upper left")
     plt.grid()
     plt.savefig(f"output/{filename}")
-    plt.show()
 
     return absorbers
 
@@ -599,7 +597,6 @@ def figure_3b(mats: Materials, geom: Geometry):
         ylabel="Λ (μm)",
     )
     fig.colorbar(im, label="FWHM (nm)")
-    plt.show()
 
     return None
 
@@ -728,7 +725,6 @@ def main():
             "axes.linewidth": 0.5,
         },
     )
-    plt_use("TkAgg")
     plt.ion()
 
     # Start time
@@ -799,6 +795,9 @@ def main():
         mats=mats,
         geom=geom,
     )
+
+    # Show figures
+    plt.show()
 
     # Show running time on console
     print(f"Running time : {time.time() - start_time:.2f} s")

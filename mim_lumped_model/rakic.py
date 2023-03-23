@@ -20,11 +20,12 @@ from scipy.special import wofz
 @dataclass
 class Oscillator:
     """
-    Drude-Lorentz oscillator parameters
+    Drude-Lorentz and Brendel oscillator parameters
 
     f: strength
     Γ: 1/lifetime (1/eV)
     ω: frequency (eV)
+    σ: standard deviation (eV)
     """
 
     f: float
@@ -219,7 +220,6 @@ def rakic_au_model(
     plt.ylim(bottom=0)
     plt.legend()
     plt.grid()
-    plt.show()
 
     # Write data to Excel files
     if write_to_excel:
