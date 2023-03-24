@@ -586,21 +586,23 @@ def figure_3a(mats: Materials, geom: Geometry) -> list:
 
     """
 
-    # MIM geometries: triplets of a(m), b (m), Λ(m)
+    # MIM geometries: triplets of a(m), b (m), Λ(m). A linear distribution of c values
+    # is used. Note that the [Kang, 2019] article does not explicitly do this, but it
+    # improves the fit to their data.
     geometries: np.ndarray = np.asarray(
         [
-            [150, 1.3, geom.c, 3.0],
-            [150, 1.4, geom.c, 3.2],
-            [200, 1.5, geom.c, 3.4],
-            [200, 1.6, geom.c, 3.6],
-            [200, 1.7, geom.c, 3.6],
-            [200, 1.8, geom.c, 3.8],
-            [200, 1.9, geom.c, 4.0],
-            [300, 2.0, geom.c, 4.0],
-            [300, 2.1, geom.c, 4.0],
-            [300, 2.2, geom.c, 4.0],
-            [300, 2.3, geom.c, 4.0],
-            [300, 2.4, geom.c, 4.0],
+            [150, 1.3, 1, 3.0],
+            [150, 1.4, 1, 3.2],
+            [200, 1.5, 1, 3.4],
+            [200, 1.6, 1, 3.6],
+            [200, 1.7, 1, 3.6],
+            [200, 1.8, 1, 3.8],
+            [200, 1.9, 1, 4.0],
+            [300, 2.0, 1, 4.0],
+            [300, 2.1, 1, 4.0],
+            [300, 2.2, 1, 4.0],
+            [300, 2.3, 1, 4.0],
+            [300, 2.4, 1, 4.0],
         ]
     ) * [1e-9, 1e-6, 1, 1e-6]
     geometries[:, 2] = np.linspace(0.46, 0.5, len(geometries))
