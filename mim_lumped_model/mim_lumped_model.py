@@ -24,6 +24,7 @@ import sys
 import time
 from collections import namedtuple
 from itertools import product
+from matplotlib import get_backend
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -325,7 +326,7 @@ def plot_absorbance_spectra(
     Args:
         mats (Materials): material properties
         geom (Geometry): reference structure geometry
-        geometries (np.ndarray): MIMs geometries as array of [a, b, Λ] value triplets
+        geometries (np.ndarray): MIMs geometries as array of [a, b, c, Λ] quadruplets
         title (str): plot title
         filename (str): filename for saving the plot
 
@@ -363,8 +364,8 @@ def plot_absorbance_spectra(
         title=f"{title}\n"
         f"{mats.metal_name} ({mats.metal_datafile}) : "
         rf"ω$_p$ = 2$\pi$ {mats.ω_p/(2*np.pi):.2e} Hz, τ = {mats.τ:.2e} s, "
-        rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm\n"
-        f"{mats.insulator_name} ({mats.insulator_datafile}) : "
+        rf"t$_{{metal}}$ = {geom.t_metal*1e9:.1f} nm"
+        f"\n{mats.insulator_name} ({mats.insulator_datafile}) : "
         rf"t$_{{ins}}$ = {geom.t_ins * 1e9:.1f} nm",
         xlabel="Wavelength (μm)",
         ylabel="Absorbance",
@@ -554,7 +555,7 @@ def figure_2d(mats: Materials, geom: Geometry) -> list:
 
     """
 
-    # MIM geometries: triplets of a(m), b (m), Λ(m)
+    # MIM geometries: quadruplets of a(m), b (m), c, Λ(m)
     geometries: np.ndarray = np.asarray(
         [
             [150, 1.5, geom.c, 3.6],
@@ -586,9 +587,9 @@ def figure_3a(mats: Materials, geom: Geometry) -> list:
 
     """
 
-    # MIM geometries: triplets of a(m), b (m), Λ(m). A linear distribution of c values
-    # is used. Note that the [Kang, 2019] article does not explicitly do this, but it
-    # improves the fit to their data.
+    # MIM geometries: quadruplets of a(m), b (m), c, Λ(m). A linear distribution of c
+    # values is used. Note that the [Kang, 2019] article does not explicitly do this,
+    # but it improves the fit to their data.
     geometries: np.ndarray = np.asarray(
         [
             [150, 1.3, 1, 3.0],
@@ -718,6 +719,19 @@ def main():
 
     """
 
+    # matplotlib parameters and non-blocking mode
+    plt.rcParams.update(
+        {
+            "backend": "TkAgg",
+            "figure.dpi": 200,
+            "figure.figsize": [8, 5],
+            "font.size": 6,
+            "lines.linewidth": 0.5,
+            "axes.linewidth": 0.5,
+            "interactive": True,
+        },
+    )
+
     # Show Python interpreter version, script name & version on console
     python_version = (
         f"{str(sys.version_info.major)}"
@@ -725,20 +739,10 @@ def main():
         f".{str(sys.version_info.micro)}"
     )
     print(
-        f"{os.path.basename(__file__)} {__version__} (running Python {python_version})"
+        f"{os.path.basename(__file__)} {__version__} "
+        f"(running Python {python_version}, "
+        f"matplotlib backend: {get_backend()})"
     )
-
-    # matplotlib parameters and non-blocking mode
-    plt.rcParams.update(
-        {
-            "figure.dpi": 200,
-            "figure.figsize": [8, 5],
-            "font.size": 6,
-            "lines.linewidth": 0.5,
-            "axes.linewidth": 0.5,
-        },
-    )
-    plt.ion()
 
     # Start time
     start_time: float = time.time()
@@ -810,7 +814,7 @@ def main():
     )
 
     # Show figures
-    plt.show()
+    plt.show(block=False)
 
     # Show running time on console
     print(f"Running time : {time.time() - start_time:.2f} s")
@@ -822,3 +826,4 @@ def main():
 if __name__ == "__main__":
     main()
     print("Done!")
+    exit()
